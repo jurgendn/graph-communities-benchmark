@@ -1,30 +1,31 @@
 """Main entry point for running the benchmark with Comet ML logging."""
 
 import os
-from pathlib import Path
 
 from comet_ml import Experiment
 from dotenv import load_dotenv
 
 from src.benchmark import run_dynamic_benchmark
 from src.dataloader.data_reader import load_txt_dataset
+from src.utils.arg_parser import parse_args
 
 # Load environment variables
 load_dotenv()
 
 
 def main():
-    dataset_name = "CollegeMsg"
-    dataset_path = f"data/{dataset_name}.txt"
+    args = parse_args()
+    dataset_name = args.dataset
 
     tg = load_txt_dataset(
-        file_path=dataset_path,
-        source_idx=0,
-        target_idx=1,
-        batch_range=1e-4,
-        initial_fraction=0.4,
-        max_steps=10,
-        load_full_nodes=False,
+        file_path=args.dataset_path,
+        source_idx=args.source_idx,
+        target_idx=args.target_idx,
+        batch_range=args.batch_range,
+        initial_fraction=args.initial_fraction,
+        max_steps=args.max_steps,
+        load_full_nodes=args.load_full_nodes,
+        delimiter=args.delimiter,
     )
 
     print(f"Loaded temporal graph: {len(tg)} snapshots")
