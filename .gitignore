@@ -9,6 +9,14 @@ __pycache__/
 # Data
 data/
 
+# Opencode
+.opencode/
+.crush
+
+# Visualization data
+experiments/
+assets/
+
 # Distribution / packaging
 .Python
 build/

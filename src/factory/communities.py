@@ -1,18 +1,20 @@
-from typing import Any, Dict, List, Set
+from typing import List
 
 import numpy as np
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel
 
 
 class IntermediateResults(BaseModel):
     runtime: float = 0.0
-    modularity: float = 0.0
+    cdlib_modularity_overlap: float = 0.0
+    customize_q0_overlap: float = 0.0
     affected_nodes: int = 0
     num_communities: int = 0
 
 class MethodDynamicResults(BaseModel):
     runtimes: List[float] = []
-    modularities: List[float] = []
+    cdlib_modularity_overlap_trace: List[float] = []
+    customize_q0_overlap_trace: List[float] = []
     affected_nodes: List[int] = []
     iterations_per_step: List[int] = []
     num_communities: List[int] = []
@@ -21,7 +23,8 @@ class MethodDynamicResults(BaseModel):
         self, intermediate_results: IntermediateResults
     ):
         self.runtimes.append(intermediate_results.runtime)
-        self.modularities.append(intermediate_results.modularity)
+        self.cdlib_modularity_overlap_trace.append(intermediate_results.cdlib_modularity_overlap)
+        self.customize_q0_overlap_trace.append(intermediate_results.customize_q0_overlap)
         self.affected_nodes.append(intermediate_results.affected_nodes)
         self.num_communities.append(intermediate_results.num_communities)
 
@@ -36,23 +39,48 @@ class MethodDynamicResults(BaseModel):
         return sum(self.runtimes)
     
     @property
-    def modularity_stability(self) -> float:
-        if len(self.modularities) < 2:
+    def cdlib_modularity_overlap_stability(self) -> float:
+        if len(self.cdlib_modularity_overlap_trace) < 2:
             return 0.0
-        return max(self.modularities) - min(self.modularities)
+        return max(self.cdlib_modularity_overlap_trace) - min(
+            self.cdlib_modularity_overlap_trace
+        )
     
     @property
-    def modularity_range(self):
-        if not self.modularities:
+    def customize_q0_overlap_stability(self) -> float:
+        if len(self.customize_q0_overlap_trace) < 2:
+            return 0.0
+        return max(self.customize_q0_overlap_trace) - min(
+            self.customize_q0_overlap_trace
+        )
+
+    @property
+    def cdlib_modularity_overlap_range(self):
+        if not self.cdlib_modularity_overlap_trace:
             return (None, None)
-        return (min(self.modularities), max(self.modularities))
+        return (min(self.cdlib_modularity_overlap_trace), max(self.cdlib_modularity_overlap_trace))
+
+    @property
+    def customize_q0_overlap_range(self):
+        if not self.customize_q0_overlap_trace:
+            return (None, None)
+        return (
+            min(self.customize_q0_overlap_trace),
+            max(self.customize_q0_overlap_trace),
+        )
 
     @property
     def time_steps(self) -> List[int]:
         return list(range(len(self.runtimes)))
     
     @property
-    def avg_modularities(self):
-        if not self.modularities:
+    def avg_cdlib_modularity_overlap(self):
+        if not self.cdlib_modularity_overlap_trace:
             return 0.0
-        return np.mean(self.modularities)
+        return np.mean(self.cdlib_modularity_overlap_trace)
+
+    @property
+    def avg_customize_q0_overlap(self):
+        if not self.customize_q0_overlap_trace:
+            return 0.0
+        return np.mean(self.customize_q0_overlap_trace)

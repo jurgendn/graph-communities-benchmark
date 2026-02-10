@@ -3,13 +3,14 @@ import time
 from cdlib import algorithms, evaluation
 from dynetx import DynGraph
 
+from src.evaluations.target_modularity import overlapping_modularity_q0
 from src.factory.communities import IntermediateResults, MethodDynamicResults
 from src.factory.factory import TemporalGraph
 
 
 class Tiles:
-    def __init__(self):
-        pass
+    def __init__(self, obs: int = 1):
+        self.obs = obs
 
     def run(self, tg: TemporalGraph) -> MethodDynamicResults:
         """
@@ -25,14 +26,16 @@ class Tiles:
         for t, snapshot in enumerate(tg.iter_snapshots()):
             dgraph.add_interactions_from(list(snapshot.edges()), t=t)
         start_time = time.perf_counter()
-        res = algorithms.tiles(dg=dgraph, obs=1)
+        res = algorithms.tiles(dg=dgraph, obs=self.obs)
         elapsed = time.perf_counter() - start_time
         results = MethodDynamicResults()
         for snapshot, community in zip(tg.iter_snapshots(), res.clusterings.values()):
             q = evaluation.modularity_overlap(snapshot, community).score
+            q0 = overlapping_modularity_q0(snapshot, community)
             current_res = IntermediateResults(
                 runtime=elapsed,
-                modularity=q,
+                cdlib_modularity_overlap=q,
+                customize_q0_overlap=q0,
                 affected_nodes=snapshot.number_of_nodes(),
                 num_communities=len(community.communities),
             )
