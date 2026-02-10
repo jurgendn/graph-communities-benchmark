@@ -46,4 +46,17 @@ def parse_args():
         default=" ",
         help="Delimiter used in the dataset file (default: space)",
     )
+    parser.add_argument(
+        "--delete-insert-ratio",
+        type=float,
+        default=0.8,
+        help="Ratio of deletions to insertions when creating snapshots (default: 0.8)",
+    )
+    # Add num runs
+    parser.add_argument(
+        "--num-runs",
+        type=int,
+        default=5,
+        help="Number of runs for each algorithm (default: 5)",
+    )
     return parser.parse_args()

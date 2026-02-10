@@ -55,6 +55,10 @@ class TemporalGraph:
         for i in range(len(self)):
             yield self[i]
 
+    def average_changes_per_snapshot(self) -> float:
+        total_changes = sum(len(step.deletions) + len(step.insertions) for step in self.steps)
+        return total_changes / len(self.steps) if self.steps else 0.0
+
 if __name__ == "__main__":
     graph = nx.karate_club_graph()
     changes_step1 = TemporalChanges(

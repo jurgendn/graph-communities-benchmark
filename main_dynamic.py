@@ -26,6 +26,7 @@ def main():
         max_steps=args.max_steps,
         load_full_nodes=args.load_full_nodes,
         delimiter=args.delimiter,
+        delete_insert_ratio=args.delete_insert_ratio,
     )
 
     print(f"Loaded temporal graph: {len(tg)} snapshots")
@@ -37,7 +38,7 @@ def main():
     for algo_name, res in results.items():
         experiment = Experiment(
             api_key=os.getenv("COMET_API_KEY"),
-            project_name=os.getenv("COMET_PROJECT_NAME", "graph-communities-benchmark"),
+            project_name=f"graph-community-detection-overlapping-{args.dataset.lower()}",
             workspace=os.getenv("COMET_WORKSPACE"),
         )
 
@@ -52,33 +53,46 @@ def main():
             "num_snapshots": len(tg),
             "initial_nodes": tg.base_graph.number_of_nodes(),
             "initial_edges": tg.base_graph.number_of_edges(),
+            "max_steps": args.max_steps,
+            "batch_range": args.batch_range,
+            "initial_fraction": args.initial_fraction,
+            "delete_insert_ratio": args.delete_insert_ratio,
         })
 
         # Log summary metrics
-        experiment.log_metrics({
-            "avg_runtime": res.avg_runtime,
-            "total_runtime": res.total_runtime,
-            "avg_modularity": res.avg_modularities,
-            "modularity_stability": res.modularity_stability,
-            "num_steps": len(res.runtimes),
-        })
+        experiment.log_metrics(
+            {
+                "avg_runtime": res.avg_runtime,
+                "total_runtime": res.total_runtime,
+                "avg_cdlib_modularity_overlap": res.avg_cdlib_modularity_overlap,
+                "cdlib_modularity_overlap_stability": res.cdlib_modularity_overlap_stability,
+                "customize_q0_overlap_stability": res.customize_q0_overlap_stability,
+                "avg_customize_q0_overlap": res.avg_customize_q0_overlap,
+                "num_steps": len(res.runtimes),
+            }
+        )
 
         # Log per-step metrics
-        for step, (runtime, modularity, num_communities) in enumerate(
-            zip(res.runtimes, res.modularities, res.num_communities)
+        for step, (runtime, cdlib_modularity, customize_q0_modularity, num_communities) in enumerate(
+            zip(res.runtimes, res.cdlib_modularity_overlap_trace, res.customize_q0_overlap_trace, res.num_communities)
         ):
-            experiment.log_metrics({
-                "runtime": runtime,
-                "modularity": modularity,
-                "num_communities": num_communities,
-            }, step=step)
+            experiment.log_metrics(
+                {
+                    "runtime": runtime,
+                    "cdlib_modularity": cdlib_modularity,
+                    "customize_q0_modularity": customize_q0_modularity,
+                    "num_communities": num_communities,
+                },
+                step=step,
+            )
 
         experiment.end()
 
         print(f"{algo_name}:")
         print(f"  steps: {len(res.runtimes)}")
         print(f"  avg_runtime: {res.avg_runtime:.4f}s")
-        print(f"  avg_modularity: {res.avg_modularities:.4f}")
+        print(f"  avg_cdlib_modularity_overlap: {res.avg_cdlib_modularity_overlap:.4f}")
+        print(f"  avg_customize_q0_overlap: {res.avg_customize_q0_overlap:.4f}")
         print()
 
 

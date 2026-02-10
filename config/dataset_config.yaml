@@ -1,0 +1,180 @@
+# Dataset Configuration for Community Detection Benchmarks
+# Each dataset entry contains the parameters required for benchmarking
+
+datasets:
+  bio-wormnet-v3:
+    path: ./data/bio-WormNet-v3.txt
+    dataset_name: bio-WormNet-v3
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-4
+    initial_fraction: 0.4
+    max_steps: 9
+    delimiter: " "
+
+  ca-astroph:
+    path: ./data/ca-AstroPh.txt
+    dataset_name: ca-AstroPh
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-4
+    initial_fraction: 0.4
+    max_steps: 9
+
+  ca-condmat:
+    path: ./data/ca-CondMat.txt
+    dataset_name: ca-CondMat
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-4
+    initial_fraction: 0.4
+    max_steps: 10
+
+  ca-hepph:
+    path: ./data/ca-HepPh.txt
+    dataset_name: ca-HepPh
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-4
+    initial_fraction: 0.4
+    max_steps: 10
+
+  college-msg:
+    path: ./data/CollegeMsg.txt
+    dataset_name: CollegeMsg
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-3
+    initial_fraction: 0.4
+    delimiter: " "
+    max_steps: 10
+
+  edit-enwikibooks:
+    path: ./data/edit-enwikibooks.txt
+    dataset_name: edit-enwikibooks
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-4
+    initial_fraction: 0.4
+    max_steps: 9
+    delimiter: " "
+
+  ia-contacts-dublin:
+    path: ./data/ia-contacts_dublin.txt
+    dataset_name: ia-contacts-dublin
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-3
+    initial_fraction: 0.4
+    max_steps: 9
+    delimiter: ","
+
+  ia-digg-reply:
+    path: ./data/ia-digg-reply.txt
+    dataset_name: ia-digg-reply
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-5
+    initial_fraction: 0.4
+    max_steps: 10
+    delimiter: " "
+
+  ia-frwikinews-user-edits:
+    path: ./data/ia-frwikinews-user-edits.txt
+    dataset_name: ia-frwikinews-user-edits
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-4
+    initial_fraction: 0.4
+    max_steps: 9
+    delimiter: " "
+
+  lfr-large-community-size:
+    path: data/lfr_large_community_size.txt
+    dataset_name: lfr_large_community_size
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-4
+    initial_fraction: 0.4
+    max_steps: 9
+    delimiter: " "
+
+  lfr-small-community-size:
+    path: data/lfr_small_community_size.txt
+    dataset_name: lfr_small_community_size
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-4
+    initial_fraction: 0.4
+    max_steps: 9
+    delimiter: " "
+
+  scc-infect-dublin:
+    path: data/scc_infect-dublin.txt
+    dataset_name: scc_infect_dublin
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-4
+    initial_fraction: 0.4
+    max_steps: 9
+    delimiter: " "
+
+  scc-infect-hyper:
+    path: data/scc_infect-hyper.txt
+    dataset_name: scc_infect_hyper
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-4
+    initial_fraction: 0.4
+    max_steps: 9
+    delimiter: " "
+
+  soc-sign-bitcoinalpha:
+    path: data/soc-sign-bitcoinalpha.csv
+    dataset_name: soc_sign_bitcoin_alpha
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-4
+    initial_fraction: 0.4
+    max_steps: 9
+    delimiter: ","
+
+  soc-sign-bitcoinotc:
+    path: data/soc-sign-bitcoinotc.csv
+    dataset_name: soc_sign_bitcoin_otc
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-3
+    initial_fraction: 0.4
+    max_steps: 10
+    delimiter: ","
+
+  sx-askubuntu:
+    path: data/sx-askubuntu.txt
+    dataset_name: sx_askubuntu
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-4
+    initial_fraction: 0.4
+    max_steps: 9
+    delimiter: " "
+
+  sx-mathoverflow:
+    path: data/sx-mathoverflow.txt
+    dataset_name: sx_mathoverflow
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-4
+    initial_fraction: 0.4
+    max_steps: 9
+    delimiter: " "
+
+  synthetic-graph:
+    path: data/synthetic_graph.txt
+    dataset_name: synthetic_graph
+    source_idx: 0
+    target_idx: 1
+    batch_range: 1e-5
+    initial_fraction: 0.6
+    max_steps: 10
+    delimiter: " "

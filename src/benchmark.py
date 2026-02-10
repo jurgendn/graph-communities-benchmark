@@ -1,10 +1,10 @@
 import time
 
 from cdlib import NodeClustering, algorithms, evaluation
-from dynetx import DynGraph
 from tqdm.auto import tqdm
 
 from src import dynamic_methods
+from src.evaluations.target_modularity import overlapping_modularity_q0
 from src.factory.communities import IntermediateResults, MethodDynamicResults
 from src.factory.factory import TemporalGraph
 from src.static_methods.ndocd import NDOCD
@@ -25,10 +25,22 @@ def run_static_benchmark(
         Dictionary mapping algorithm name to MethodDynamicResults
     """
     ALGORITHMS_OVERLAPPING = {
-        "angel": {"func": algorithms.angel, "params": {"threshold": 0.25}},
-        "demon": {"func": algorithms.demon, "params": {"epsilon": 0.25}},
-        "coach": {"func": algorithms.coach, "params": {}},
-        "ndocd": {"func": NDOCD(), "params": {}},
+        # "angel": {
+        #     "func": algorithms.angel,
+        #     "params": {"threshold": 0.25},
+        #     "metadata": {},
+        # },
+        # "demon": {
+        #     "func": algorithms.demon,
+        #     "params": {"epsilon": 0.25},
+        #     "metadata": {},
+        # },
+        "coach": {"func": algorithms.coach, "params": {}, "metadata": {}},
+        "ndocd": {"func": NDOCD(), "params": {}, "metadata": {}},
+        "percomvc": {"func": algorithms.percomvc, "params": {}, "metadata": {}},
+        "slpa": {"func": algorithms.slpa, "params": {}, "metadata": {}},
+        # "dcs": {"func": algorithms.dcs, "params": {}, "metadata": {}},
+        # "lfm": {"func": algorithms.lfm, "params": {"alpha": 1.0}, "metadata": {}},
     }
 
     if algorithm_names is None:
@@ -49,11 +61,13 @@ def run_static_benchmark(
             communities: NodeClustering = algo_func(snapshot, **algo_params)
             elapsed = time.perf_counter() - start_time
 
-            modularity = evaluation.modularity_overlap(snapshot, communities).score
+            q0_modularity = overlapping_modularity_q0(snapshot, communities)
+            cdlib_modularity = evaluation.modularity_overlap(snapshot, communities).score
 
             intermediate = IntermediateResults(
                 runtime=elapsed,
-                modularity=modularity,
+                cdlib_modularity_overlap=cdlib_modularity,
+                customize_q0_overlap=q0_modularity,
                 affected_nodes=snapshot.number_of_nodes(),
                 num_communities=len(communities.communities),
             )
@@ -77,7 +91,7 @@ def run_dynamic_benchmark(
     """
     ALGORITHMS_OVERLAPPING = {
         "tiles": {
-            "func": dynamic_methods.Tiles(),
+            "func": dynamic_methods.Tiles(obs=1),
             "params": {},
         }
     }

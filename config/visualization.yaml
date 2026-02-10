@@ -1,0 +1,103 @@
+raw_dir: "experiments/raw"
+merge_dir: "experiments/merged"
+output_dir: "assets"
+
+workspace: "d-ng-nguy-n"
+metric_keys:
+  - "cdlib_modularity"
+  - "customize_q0_modularity"
+  - "num_communities"
+  - "runtime"
+projects:
+  - graph-community-detection-overlapping-collegemsg
+  - graph-community-detection-overlapping-ia-frwikinews-user-edits
+  - graph-community-detection-overlapping-soc-sign-bitcoin-otc
+  - graph-community-detection-overlapping-soc-sign-bitcoin-alpha
+  - graph-community-detection-overlapping-ca-condmat
+  - graph-community-detection-overlapping-sx-mathoverflow
+  - graph-community-detection-overlapping-edit-enwikibooks
+  - graph-community-detection-overlapping-lfr-large-community-size
+  - graph-community-detection-overlapping-bio-wormnet-v3
+  - graph-community-detection-overlapping-lfr-small-community-size
+  - graph-community-detection-overlapping-ca-hepph
+  - graph-community-detection-overlapping-ca-astroph
+  - graph-community-detection-overlapping-scc-
+  # - graph-community-detection-overlapping-sx-askubuntu
+
+plotter:
+  common_plotter_settings: &common_plotter_settings
+    synthetic_datasets: &synthetic_datasets
+      - graph-community-detection-overlapping-lfr-large-community-size
+      - graph-community-detection-overlapping-lfr-small-community-size
+    real_world_datasets: &real_world_datasets
+      - graph-community-detection-overlapping-bio-wormnet-v3
+      - graph-community-detection-overlapping-ca-condmat
+      - graph-community-detection-overlapping-ca-hepph
+      - graph-community-detection-overlapping-ca-astroph
+      - graph-community-detection-overlapping-collegemsg
+      - graph-community-detection-overlapping-edit-enwikibooks
+      - graph-community-detection-overlapping-ia-frwikinews-user-edits
+      - graph-community-detection-overlapping-soc-sign-bitcoin-alpha
+      - graph-community-detection-overlapping-soc-sign-bitcoin-otc
+      # - graph-community-detection-overlapping-sx-askubuntu
+      - graph-community-detection-overlapping-sx-mathoverflow
+    projects_name_mapping:
+      graph-community-detection-overlapping-bio-wormnet-v3: "Bio-WormNet-v3"
+      graph-community-detection-overlapping-ca-condmat: "CA-CondMat"
+      graph-community-detection-overlapping-ca-hepph: "CA-Hepph"
+      graph-community-detection-overlapping-ca-astroph: "CA-AstroPh"
+      graph-community-detection-overlapping-collegemsg: "CollegeMsg"
+      graph-community-detection-overlapping-edit-enwikibooks: "Edit-Enwikibooks"
+      graph-community-detection-overlapping-ia-frwikinews-user-edits: "IA-FrWikiNews-User-Edits"
+      graph-community-detection-overlapping-lfr-large-community-size: "LFR-Large-Community-Size"
+      graph-community-detection-overlapping-lfr-small-community-size: "LFR-Small-Community-Size"
+      graph-community-detection-overlapping-soc-sign-bitcoin-alpha: "Soc-Sign-Bitcoin-Alpha"
+      graph-community-detection-overlapping-soc-sign-bitcoin-otc: "Soc-Sign-Bitcoin-OTC"
+      # graph-community-detection-overlapping-sx-askubuntu: "SX-AskUbuntu"
+      graph-community-detection-overlapping-sx-mathoverflow: "SX-MathOverflow"
+    selected_algorithms:
+      - coach
+      - core_expansion
+      - graph_entropy
+      # - umstmo
+      - slpa
+      - overlapping_rwgp_df
+    methods_name:
+      coach: CoAcH
+      core_expansion: Core Expansion
+      graph_entropy: Graph Entropy
+      umstmo: UMSTMO
+      overlapping_rwgp_df: RWGP-DFL-Overlap
+      slpa: SLPA
+    colors:
+      coach: "#1B4F72" # steel blue (baseline, conservative)
+      core_expansion: "#E09F3E" # muted gold (warm, serious)
+      graph_entropy: "#2E8B57" # sea green (information-theoretic feel)
+      slpa: "#8E44AD" # dignified purple (distinct but not loud)
+      umstmo: "#C0392B" # deep brick red (strong competitor)
+      overlapping_rwgp_df: "#2C7BE5" # flagship blue (your method)
+    orders:
+      - overlapping_rwgp_df
+      - coach
+      - core_expansion
+      - graph_entropy
+      - slpa
+    markers:
+      coach: "o"
+      core_expansion: "s"
+      graph_entropy: "D"
+      umstmo: "^"
+      overlapping_rwgp_df: "v"
+      slpa: "P"
+  single_plotter:
+    <<: *common_plotter_settings
+
+  grouped_plotter:
+    synthetic_datasets: *synthetic_datasets
+    real_world_datasets: *real_world_datasets
+    group_by:
+      - synthetic_datasets
+      - real_world_datasets
+    subplots_layout:
+      synthetic_datasets: [1, 2]
+      real_world_datasets: [2, 5]
