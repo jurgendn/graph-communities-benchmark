@@ -10,6 +10,7 @@ A comprehensive benchmarking framework for evaluating **overlapping community de
 - **Temporal Graph Support**: Load edge-list data and simulate dynamic graph evolution with configurable insertion/deletion batches
 - **Static Benchmark Mode**: Run community detection algorithms independently on each snapshot
 - **Dynamic Benchmark Mode**: Use algorithms designed for evolving networks (e.g., TILES)
+- **Community Visualization**: Visualize overlapping communities with circular layout showing community overlaps and membership counts
 - **Experiment Tracking**: Integrated [Comet ML](https://www.comet.com/) logging for metrics, parameters, and reproducibility
 - **Extensible Architecture**: Easily add new algorithms, datasets, and evaluation metrics
 
@@ -169,6 +170,14 @@ graph-communities-benchmark/
 │   ├── benchmark_college_msg.sh
 │   └── benchmark_soc-sign-bitcoinalpha.sh
 │
+├── tools/                  # Visualization & analysis scripts
+│   ├── fetch.py           # Fetch experiments from Comet ML
+│   ├── merge.py           # Merge metrics by algorithm
+│   └── plots.py           # Generate comparison plots
+│
+├── assets/                # Generated visualization outputs
+│   └── grouped/           # Grouped comparison plots
+│
 └── src/
     ├── benchmark.py        # Core benchmark runner functions
     │
@@ -190,9 +199,17 @@ graph-communities-benchmark/
     ├── evaluations/
     │   └── base.py         # Evaluation metrics (modularity, NMI)
     │
-    └── utils/
-        ├── arg_parser.py   # Command-line argument parsing
-        └── visualize.py    # Community visualization utilities
+    ├── utils/
+    │   ├── arg_parser.py   # Command-line argument parsing
+    │   └── visualize.py    # Community network visualization
+    │
+    └── visualization/      # Metrics visualization pipeline
+        ├── config.py       # Configuration management
+        ├── core.py         # GroupedPlotter & Plot classes
+        ├── data.py         # Fetcher & Merger for Comet ML data
+        ├── common.py       # Common utilities
+        ├── styles.py       # Plot styling
+        └── utils.py        # Data loading & processing
 ```
 
 ---
@@ -210,6 +227,78 @@ The benchmark tracks the following metrics for each algorithm:
 | **Affected Nodes** | Number of nodes in each snapshot |
 
 All metrics are logged to Comet ML for visualization and comparison.
+
+---
+
+## Visualization
+
+The benchmark includes a comprehensive visualization system with two components:
+
+### 1. Community Network Visualization
+
+Visualize overlapping communities detected by algorithms in the network:
+
+```python
+from src.utils.visualize import visualize_communities
+
+# After running community detection:
+result = algorithms.angel(graph, threshold=0.25)
+visualize_communities(graph, result.communities)
+```
+
+**Features**:
+- **Circular Layout**: Communities arranged around cluster centers with nodes positioned near their respective clusters
+- **Overlap Visualization**: Overlapping nodes highlighted with red edges and labeled with their membership count
+- **Color Coding**: Up to 20 colors (tab20 colormap) for easy community distinction
+- **Interactive Legend**: Shows community indices and overlap indicators
+- **Edge Visualization**: Network edges displayed with transparency to reveal structure
+
+### 2. Experiment Metrics Visualization & Analysis
+
+Generate comparative plots for benchmark metrics across experiments using data from Comet ML.
+
+**Workflow**:
+
+1. **Fetch Experiments** - Retrieve all experiments from Comet ML workspace:
+```bash
+python tools/fetch.py
+```
+
+2. **Merge Metrics** - Aggregate metrics by algorithm across multiple runs:
+```bash
+python tools/merge.py
+```
+
+3. **Generate Plots** - Create grouped comparison plots:
+```bash
+python tools/plots.py                    # All metrics
+python tools/plots.py --metric modularity  # Specific metric
+python tools/plots.py --out custom/path    # Custom output directory
+```
+
+**Data Pipeline**:
+
+- **Fetcher** (`src.visualization.data.Fetcher`): Connects to Comet ML API using credentials from `.env`, downloads all experiments for a project, extracts parameters and metrics, saves raw data to `data/raw/`
+- **Merger** (`src.visualization.data.Merger`): Reads raw experiment files, groups metrics by algorithm name, normalizes metric values and step indices, aggregates multiple runs per algorithm, outputs merged structure to `data/merge/`
+- **GroupedPlotter** (`src.visualization.core.GroupedPlotter`): Loads merged metrics, generates comparison plots (line, box, bar charts), supports per-dataset and cross-dataset analysis, saves results to `assets/grouped/`
+
+**Output Structure**:
+```
+assets/grouped/
+├── per_datasets/
+│   └── {project_name}/
+│       ├── {metric_name}_line.png        # Line plot with multiple runs
+│       ├── {metric_name}_box.png         # Box plot comparing algorithms
+│       └── {metric_name}_bar.png         # Bar chart of aggregated values
+└── merged_all/
+    └── {metric_name}_{type}.png         # Cross-dataset comparison plots
+```
+
+**Supported Metrics**:
+- `num_communities` - Number of detected communities per snapshot
+- `cdlib_modularity` - Overlapping modularity score
+- `customize_q0_modularity` - Custom modularity variant
+- `runtime` - Execution time per snapshot
 
 ---
 
@@ -285,6 +374,7 @@ ndocd:
 
 - [cdlib](https://cdlib.readthedocs.io/) - Community Detection Library
 - [networkx](https://networkx.org/) - Graph analysis library
+- [matplotlib](https://matplotlib.org/) - Visualization library
 - [pydantic](https://docs.pydantic.dev/) - Data validation
 - [comet_ml](https://www.comet.com/) - Experiment tracking
 - [python-dotenv](https://pypi.org/project/python-dotenv/) - Environment variable management

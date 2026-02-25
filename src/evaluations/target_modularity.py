@@ -12,9 +12,11 @@ This ensures Q is bounded in [-1, 1]
 """
 
 from typing import List, Set, Union
-import numpy as np
-from scipy.sparse import csr_matrix
+
 import networkx as nx
+import numpy as np
+from cdlib import NodeClustering, evaluation
+from scipy.sparse import csr_matrix
 
 try:
     from numba import njit, prange
@@ -23,7 +25,7 @@ except ImportError:
     HAS_NUMBA = False
     print("Numba not available. Install with: pip install numba")
 
-Communities = Union[List[Set], 'NodeClustering']
+Communities = Union[List[Set], NodeClustering]
 
 def _extract_communities(communities: Communities) -> List[Set]:
     """Extract community list from various input formats."""

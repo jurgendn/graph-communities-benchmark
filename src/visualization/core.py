@@ -26,10 +26,15 @@ from src.visualization.utils import (
 class Plot:
     """Plot metrics with line, box, and bar chart options."""
 
-    def __init__(self, project: str, metric_file: Path, out_dir: Path, aggregate: str = "last"):
+    def __init__(self, project: str, metric_file: Path, out_dir: Path, aggregate: str = "last", batch_range: Optional[str] = None):
         self.project = project
         self.metric_file = Path(metric_file)
-        self.out_dir = Path(out_dir) / "per_datasets" / Path(project).name
+        self.batch_range = batch_range
+        # Include batch_range in output path if provided
+        out_path = Path(out_dir) / "per_datasets" / Path(project).name
+        if batch_range:
+            out_path = out_path / batch_range
+        self.out_dir = out_path
         self.aggregate = aggregate
         self.metric_name = self.metric_file.stem
         self.out_dir.mkdir(parents=True, exist_ok=True)
@@ -175,7 +180,10 @@ class Plot:
         # Draw bars with individual colors
         for i, (mean, std, alg) in enumerate(zip(means, stds, labels)):
             color = algorithm_color(alg) or "C0"
-            ax.bar(i, mean, yerr=std, capsize=5, color=color, alpha=0.8)
+            bar = ax.bar(i, mean, yerr=std, capsize=5, color=color, alpha=0.8)
+            # Add value on top of bar
+            ax.text(i, mean + std + 0.01 * max(means), f"{mean:.2f}", 
+                   ha="center", va="bottom", fontsize=9, fontweight="bold")
 
         ax.set_xticks(x)
         ax.set_xticklabels(labels_disp)
@@ -209,7 +217,7 @@ class GroupedPlotter:
         self.out_base.mkdir(parents=True, exist_ok=True)
 
     def plot(self, metric: str = "num_communities") -> List[Path]:
-        """Generate grouped plots for a metric across datasets."""
+        """Generate grouped plots for a metric across datasets and batch ranges."""
         out_paths = []
 
         # Get configuration
@@ -217,6 +225,7 @@ class GroupedPlotter:
         plotter_cfg = cfg.plotter()
         grouped = plotter_cfg.get("grouped_plotter", {}) or {}
         group_by = grouped.get("group_by", ["real_world_datasets"])
+        batch_range_categories = cfg.batch_range_categories()
 
         # Build legend once
         alg_info = get_algorithm_info()
@@ -225,19 +234,60 @@ class GroupedPlotter:
         # Determine plot modes
         modes: List[Optional[str]] = ["box", "bar", "line"] if metric in {"cdlib_modularity", "customize_q0_modularity"} else [None]
 
-        # Generate plots for each group
+        # Get dataset info
+        dataset_info = cfg.dataset_info()
+
+        # Generate plots for each group and batch range
         for group_name in group_by:
-            print(f"  Group: {group_name}")
-            for mode in modes:
-                path = self._plot_group(metric, group_name, mode, legend_handles, legend_labels)
-                if path:
-                    out_paths.append(path)
+            # Get datasets for this group
+            datasets = dataset_info.get(group_name.replace("_datasets", ""), [])
+            if not datasets:
+                continue
+            
+            # Get batch ranges available for this specific group
+            batch_ranges = self._get_batch_ranges_for_group(group_name, datasets)
+            
+            for batch_range in batch_ranges:
+                print(f"  Batch Range: {batch_range}, Group: {group_name}")
+                for mode in modes:
+                    path = self._plot_group(
+                        metric=metric,
+                        group_name=group_name,
+                        mode=mode,
+                        legend_handles=legend_handles,
+                        legend_labels=legend_labels,
+                        batch_range=batch_range,
+                    )
+                    if path:
+                        out_paths.append(path)
 
         return out_paths
 
+    def _get_available_batch_ranges(self) -> List[str]:
+        """Get list of available batch ranges from merge directory."""
+        batch_ranges = set()
+        if self.merge_root.exists():
+            for project_dir in self.merge_root.iterdir():
+                if project_dir.is_dir():
+                    for item in project_dir.iterdir():
+                        if item.is_dir() and item.name not in ['.', '..']:
+                            batch_ranges.add(item.name)
+        return sorted(batch_ranges) if batch_ranges else [""]
+
+    def _get_batch_ranges_for_group(self, group_name: str, datasets: List[str]) -> List[str]:
+        """Get batch ranges available for a specific group of datasets."""
+        batch_ranges = set()
+        for dataset in datasets:
+            dataset_path = self.merge_root / dataset
+            if dataset_path.exists():
+                for item in dataset_path.iterdir():
+                    if item.is_dir() and item.name not in ['.', '..'] and item.name != "unknown":
+                        batch_ranges.add(item.name)
+        return sorted(batch_ranges) if batch_ranges else [""]
+
     def _plot_group(self, metric: str, group_name: str, mode: Optional[str],
-                   legend_handles: List, legend_labels: List[str]) -> Optional[Path]:
-        """Plot a single group of datasets."""
+                   legend_handles: List, legend_labels: List[str], batch_range: str = "") -> Optional[Path]:
+        """Plot a single group of datasets for a specific batch range."""
         # Get datasets for this group
         cfg = ConfigManager()
         dataset_info = cfg.dataset_info()
@@ -261,7 +311,11 @@ class GroupedPlotter:
 
         # Plot each subplot
         for ax, dataset_name in zip(axes_flat, datasets):
-            metric_file = self.merge_root / dataset_name / f"{metric}.json"
+            # Build path with batch range
+            if batch_range:
+                metric_file = self.merge_root / dataset_name / batch_range / f"{metric}.json"
+            else:
+                metric_file = self.merge_root / dataset_name / f"{metric}.json"
             if not metric_file.exists():
                 ax.text(0.5, 0.5, "missing", ha="center", va="center", fontsize=9)
                 ax.axis("off")
@@ -269,6 +323,12 @@ class GroupedPlotter:
 
             data = load_metric_file(metric_file)
             algs = sort_and_filter_algorithms(list(data.keys()))
+
+            # Check if we have any data
+            if not algs or not data:
+                ax.text(0.5, 0.5, "missing", ha="center", va="center", fontsize=9)
+                ax.axis("off")
+                continue
 
             # Draw plot
             if metric in {"cdlib_modularity", "customize_q0_modularity"}:
@@ -301,9 +361,10 @@ class GroupedPlotter:
             fontsize=10,
         )
 
-        # Save
+        # Save with batch range in path
         suffix = mode if mode else "_"
-        parent_folder = self.out_base / f"{metric}" / f"{group_name}"
+        batch_folder = batch_range if batch_range else "all"
+        parent_folder = self.out_base / f"{metric}" / batch_folder / f"{group_name}"
         parent_folder.mkdir(parents=True, exist_ok=True)
         out_path = parent_folder / f"{suffix}.png"
         fig.savefig(str(out_path), dpi=300, bbox_inches="tight")
@@ -318,7 +379,8 @@ class GroupedPlotter:
             groups = [data.get(alg, []) for alg in labels]
             groups = [[summarize_run(run, "last") for run in runs] for runs in groups]
             groups = [[v for v in g if v is not None and not np.isnan(v)] for g in groups]
-            ax.boxplot(groups, labels=[algorithm_display_name(a) for a in labels], patch_artist=True)
+            labels_disp = [algorithm_display_name(alg) for alg in labels]
+            ax.boxplot(groups, tick_labels=labels_disp, patch_artist=True)
 
             # Color boxes
             for patch, alg in zip(ax.findobj(Patch), labels):
@@ -331,14 +393,15 @@ class GroupedPlotter:
             for i, (mean, std, alg) in enumerate(zip(means, stds, labels)):
                 color = algorithm_color(alg) or "C0"
                 ax.bar(i, mean, yerr=std, capsize=4, color=color, alpha=0.9)
-            ax.set_xticks(x)
-            ax.set_xticklabels([algorithm_display_name(a) for a in labels])
+                # Add value on top of bar
+                ax.text(i, mean + std + 0.01 * max(means), f"{mean:.2f}", 
+                       ha="center", va="bottom", fontsize=8, fontweight="bold")
+            ax.set_xticks([])
 
         elif mode == "line":
             x = np.arange(len(labels))
             ax.plot(x, means, color="black", linestyle="--", linewidth=2, marker="o", markersize=4)
-            ax.set_xticks(x)
-            ax.set_xticklabels([algorithm_display_name(a) for a in labels])
+            ax.set_xticks([])
 
         ax.set_ylabel(metric)
         ax.grid(axis="y", alpha=0.3)
@@ -351,9 +414,11 @@ class GroupedPlotter:
         for i, (mean, std, alg) in enumerate(zip(means, stds, labels)):
             color = algorithm_color(alg) or "C0"
             ax.bar(i, mean, yerr=std, color=color, alpha=0.9)
+            # Add value on top of bar
+            ax.text(i, mean + std + 0.01 * max(means), f"{mean:.2f}", 
+                   ha="center", va="bottom", fontsize=8, fontweight="bold")
 
-        ax.set_xticks(x)
-        ax.set_xticklabels([algorithm_display_name(a) for a in labels])
+        ax.set_xticks([])
         ax.set_ylabel("seconds (s)")
         ax.grid(axis="y", alpha=0.3)
 
@@ -381,11 +446,14 @@ class GroupedPlotter:
         ax.grid(alpha=0.3)
 
     def _build_legend(self, alg_info: Dict) -> tuple:
-        """Build legend patches and labels."""
+        """Build legend patches and labels for selected algorithms only."""
         handles = []
         labels = []
+        selected = set(alg_info.get("selected", []))
 
         for alg in alg_info.get("order", []):
+            if selected and alg not in selected:
+                continue
             color = alg_info.get("colors", {}).get(alg)
             if not color:
                 continue

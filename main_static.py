@@ -1,8 +1,10 @@
+import importlib
 import os
 import time
 
 import comet_ml  # noqa: F401
-from cdlib import NodeClustering, algorithms, evaluation
+import yaml
+from cdlib import NodeClustering, evaluation
 from comet_ml import Experiment
 from dotenv import load_dotenv
 from tqdm.auto import tqdm
@@ -15,40 +17,44 @@ from src.utils.arg_parser import parse_args
 # Load environment variables
 load_dotenv()
 
-ALGORITHMS_OVERLAPPING = {
-    # "angel": {
-    #     "func": algorithms.angel,
-    #     "params": {"threshold": 0.25},
-    #     "metadata": {},
-    # },
-    # "demon": {
-    #     "func": algorithms.demon,
-    #     "params": {"epsilon": 0.25},
-    #     "metadata": {},
-    # },
-    # "umstmo": {"func": algorithms.umstmo, "params": {}, "metadata": {}},
-    "slpa": {"func": algorithms.slpa, "params": {}, "metadata": {}},
-    "core_expansion": {"func": algorithms.core_expansion, "params": {}, "metadata": {}},
-    "graph_entropy": {"func": algorithms.graph_entropy, "params": {}, "metadata": {}},
-    "coach": {"func": algorithms.coach, "params": {}, "metadata": {}},
-    "percomvc": {"func": algorithms.percomvc, "params": {}, "metadata": {}},
-    # "dcplus": {"func": algorithms.dpclus, "params": {}, "metadata": {}},
-    # "i_pca": {"func": algorithms.ipca, "params": {}, "metadata": {}},
-    # "lais2": {
-    #     "func": algorithms.overlapping_partition.lais2,
-    #     "params": {},
-    #     "metadata": {},
-    # },
-    # "walkscan": {
-        # "func": algorithms.overlapping_partition.walkscan,
-        # "params": {},
-        # "metadata": {},
-    # },
-    # "dcs": {"func": algorithms.dcs, "params": {}, "metadata": {}},
-    # "lfm": {"func": algorithms.lfm, "params": {"alpha": 1.0}, "metadata": {}},
-    # "ebgc": {"func": algorithms.ebgc, "params": {}, "metadata": {}},
-    # "ndocd": {"func": NDOCD(), "params": {}, "metadata": {}},
-}
+
+def load_algorithms_config(config_path: str = "config/algorithms.yaml"):
+    """Load algorithm configuration from YAML file and resolve function references using importlib."""
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+    
+    target_algorithms = config.get("target_algorithms", [])
+    all_algorithms = config.get("overlapping_algorithms", {})
+    
+    # Build the algorithms dictionary with resolved function references
+    algorithms_dict = {}
+    for algo_name in target_algorithms:
+        if algo_name not in all_algorithms:
+            print(f"Warning: Algorithm '{algo_name}' not found in configuration, skipping.")
+            continue
+        
+        algo_config = all_algorithms[algo_name]
+        module_path = algo_config.get("module", "cdlib.algorithms")
+        func_name = algo_config["function"]
+        
+        # Dynamically import the module and get the function
+        try:
+            module = importlib.import_module(module_path)
+            algo_func = getattr(module, func_name)
+        except (ImportError, AttributeError) as e:
+            print(f"Warning: Could not load '{func_name}' from '{module_path}': {e}, skipping '{algo_name}'.")
+            continue
+        
+        algorithms_dict[algo_name] = {
+            "func": algo_func,
+            "params": algo_config.get("params", {}),
+            "metadata": algo_config.get("metadata", {}),
+        }
+    
+    return algorithms_dict
+
+
+ALGORITHMS_OVERLAPPING = load_algorithms_config()
 
 def main():
     args = parse_args()
