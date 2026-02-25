@@ -13,6 +13,9 @@ data/
 .opencode/
 .crush
 
+# Experiment tracking
+.cometml-runs/
+
 # Visualization data
 experiments/
 assets/
