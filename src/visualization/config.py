@@ -103,6 +103,10 @@ class ConfigManager:
         """Get list of projects."""
         return self.get().get("projects", [])
 
+    def hyperparameters(self) -> List[str]:
+        """Get list of hyperparameters."""
+        return self.get().get("hyperparameters", [])
+
     def plotter(self) -> Dict[str, Any]:
         """Get plotter configuration."""
         return self.get().get("plotter", {})
@@ -130,3 +134,9 @@ class ConfigManager:
             "markers": common.get("markers", {}),
             "order": common.get("orders", []),
         }
+
+    def batch_range_categories(self) -> Dict[str, float]:
+        """Get batch range categories (name -> threshold)."""
+        plotter_cfg = self.plotter()
+        common = plotter_cfg.get("common_plotter_settings", {})
+        return common.get("batch_range_categories", {})

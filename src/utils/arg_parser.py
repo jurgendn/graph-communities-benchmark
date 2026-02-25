@@ -54,6 +54,7 @@ def parse_args():
     )
     # Add num runs
     parser.add_argument(
+        "-n",
         "--num-runs",
         type=int,
         default=5,

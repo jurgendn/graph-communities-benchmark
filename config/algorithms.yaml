@@ -1,0 +1,141 @@
+# Algorithm Configuration for Community Detection
+# Contains all available overlapping community detection algorithms
+
+# Specify which algorithms to run (in order)
+target_algorithms:
+  - coach
+  - percomvc
+  # - big_clam
+  # - slpa
+  - core_expansion
+  # - graph_entropy
+
+# All available algorithms with their configurations
+# module: Full import path (e.g., "cdlib.algorithms" or "cdlib.algorithms.overlapping_partition")
+# function: Function name to import from the module
+overlapping_algorithms:
+  big_clam:
+    module: "src.static_methods.big_clam"
+    function: "big_clam"
+    params:
+      num_communities: 10
+      iterations: 100
+      learning_rate: 0.005
+    metadata: {}
+    description: "BigClam: Overlapping community detection algorithm"
+
+  angel:
+    module: "cdlib.algorithms"
+    function: "angel"
+    params:
+      threshold: 0.25
+    metadata: {}
+    description: "ANGEL: A New Graph-based Entity Linking algorithm"
+
+  demon:
+    module: "cdlib.algorithms"
+    function: "demon"
+    params:
+      epsilon: 0.25
+    metadata: {}
+    description: "DEMON: a local-first discovery method for overlapping communities"
+
+  umstmo:
+    module: "cdlib.algorithms"
+    function: "umstmo"
+    params: {}
+    metadata: {}
+    description: "Universal Multi-Scale Community Detection"
+
+  slpa:
+    module: "cdlib.algorithms"
+    function: "slpa"
+    params: {}
+    metadata: {}
+    description: "Speaker-Listener Label Propagation Algorithm"
+
+  core_expansion:
+    module: "cdlib.algorithms"
+    function: "core_expansion"
+    params: {}
+    metadata: {}
+    description: "Core Expansion algorithm for overlapping community detection"
+
+  graph_entropy:
+    module: "cdlib.algorithms"
+    function: "graph_entropy"
+    params: {}
+    metadata: {}
+    description: "Graph Entropy based community detection"
+
+  coach:
+    module: "cdlib.algorithms"
+    function: "coach"
+    params: {}
+    metadata: {}
+    description: "COACH: Clustering of Overlapping Communities using Hub structures"
+
+  percomvc:
+    module: "cdlib.algorithms"
+    function: "percomvc"
+    params: {}
+    metadata: {}
+    description: "Permanence based Overlapping Community Detection"
+
+  dpclus:
+    module: "cdlib.algorithms"
+    function: "dpclus"
+    params: {}
+    metadata: {}
+    description: "Density-Periphery based Clustering"
+
+  ipca:
+    module: "cdlib.algorithms"
+    function: "ipca"
+    params: {}
+    metadata: {}
+    description: "Iterative Principal Component Analysis"
+
+  lais2:
+    module: "cdlib.algorithms.overlapping_partition"
+    function: "lais2"
+    params: {}
+    metadata: {}
+    description: "Label Propagation with Improved Seed Selection"
+
+  walkscan:
+    module: "cdlib.algorithms.overlapping_partition"
+    function: "walkscan"
+    params: {}
+    metadata: {}
+    description: "Walk-based SCAN algorithm for overlapping communities"
+
+  dcs:
+    module: "cdlib.algorithms"
+    function: "dcs"
+    params: {}
+    metadata: {}
+    description: "Distributed Community Search"
+
+  lfm:
+    module: "cdlib.algorithms"
+    function: "lfm"
+    params:
+      alpha: 1.0
+    metadata: {}
+    description: "Lancichinetti-Fortunato-Radicchi benchmark for overlapping communities"
+
+  ebgc:
+    module: "cdlib.algorithms"
+    function: "ebgc"
+    params: {}
+    metadata: {}
+    description: "Entropy-based Graph Clustering"
+
+  # Note: ndocd requires custom implementation class NDOCD()
+  # ndocd:
+  #   module: "your.custom.module"
+  #   function: "NDOCD"
+  #   params: {}
+  #   metadata: {}
+  #   description: "Nonnegative Matrix Factorization for Overlapping Community Detection"

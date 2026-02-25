@@ -3,6 +3,8 @@ merge_dir: "experiments/merged"
 output_dir: "assets"
 
 workspace: "d-ng-nguy-n"
+hyperparameters:
+  - batch-range
 metric_keys:
   - "cdlib_modularity"
   - "customize_q0_modularity"
@@ -21,11 +23,18 @@ projects:
   - graph-community-detection-overlapping-lfr-small-community-size
   - graph-community-detection-overlapping-ca-hepph
   - graph-community-detection-overlapping-ca-astroph
-  - graph-community-detection-overlapping-scc-
+  - graph-community-detection-overlapping-scc-infect-dublin
+  - graph-community-detection-overlapping-scc-infect-hyper
+  - graph-community-detection-overlapping-scc-twitter-copen
+  - graph-community-detection-overlapping-scc-retweet
   # - graph-community-detection-overlapping-sx-askubuntu
 
 plotter:
   common_plotter_settings: &common_plotter_settings
+    batch_range_categories: &batch_range_categories
+      large: 0.001
+      medium: 0.0001
+      small: 0.00001
     synthetic_datasets: &synthetic_datasets
       - graph-community-detection-overlapping-lfr-large-community-size
       - graph-community-detection-overlapping-lfr-small-community-size
@@ -40,6 +49,10 @@ plotter:
       - graph-community-detection-overlapping-soc-sign-bitcoin-alpha
       - graph-community-detection-overlapping-soc-sign-bitcoin-otc
       # - graph-community-detection-overlapping-sx-askubuntu
+      - graph-community-detection-overlapping-scc-infect-dublin
+      - graph-community-detection-overlapping-scc-infect-hyper
+      - graph-community-detection-overlapping-scc-twitter-copen
+      - graph-community-detection-overlapping-scc-retweet
       - graph-community-detection-overlapping-sx-mathoverflow
     projects_name_mapping:
       graph-community-detection-overlapping-bio-wormnet-v3: "Bio-WormNet-v3"
@@ -55,12 +68,17 @@ plotter:
       graph-community-detection-overlapping-soc-sign-bitcoin-otc: "Soc-Sign-Bitcoin-OTC"
       # graph-community-detection-overlapping-sx-askubuntu: "SX-AskUbuntu"
       graph-community-detection-overlapping-sx-mathoverflow: "SX-MathOverflow"
+      graph-community-detection-overlapping-scc-infect-dublin: "SCC-Infect-Dublin"
+      graph-community-detection-overlapping-scc-infect-hyper: "SCC-Infect-Hyper"
+      graph-community-detection-overlapping-scc-twitter-copen: "SCC-Twitter-Copen"
+      graph-community-detection-overlapping-scc-retweet: "SCC-Retweet"
     selected_algorithms:
       - coach
+      - tiles
       - core_expansion
       - graph_entropy
       # - umstmo
-      - slpa
+      # - slpa
       - overlapping_rwgp_df
     methods_name:
       coach: CoAcH
@@ -68,6 +86,7 @@ plotter:
       graph_entropy: Graph Entropy
       umstmo: UMSTMO
       overlapping_rwgp_df: RWGP-DFL-Overlap
+      tiles: Tiles
       slpa: SLPA
     colors:
       coach: "#1B4F72" # steel blue (baseline, conservative)
@@ -75,12 +94,14 @@ plotter:
       graph_entropy: "#2E8B57" # sea green (information-theoretic feel)
       slpa: "#8E44AD" # dignified purple (distinct but not loud)
       umstmo: "#C0392B" # deep brick red (strong competitor)
-      overlapping_rwgp_df: "#2C7BE5" # flagship blue (your method)
+      overlapping_rwgp_df: "#E74C3C" # vibrant red (dynamic, data-driven)
+      tiles: "#17A2B8" # vibrant cyan (innovative approach)
     orders:
       - overlapping_rwgp_df
       - coach
       - core_expansion
       - graph_entropy
+      - tiles
       - slpa
     markers:
       coach: "o"
@@ -89,6 +110,7 @@ plotter:
       umstmo: "^"
       overlapping_rwgp_df: "v"
       slpa: "P"
+      tiles: "X"
   single_plotter:
     <<: *common_plotter_settings
 

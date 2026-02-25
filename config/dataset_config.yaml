@@ -1,180 +1,189 @@
 # Dataset Configuration for Community Detection Benchmarks
 # Each dataset entry contains the parameters required for benchmarking
 
+# Dataset Configuration for Community Detection Benchmarks
+# Each dataset entry contains the parameters required for benchmarking
+
+target_datasets:
+  # - college-msg
+  - soc-sign-bitcoinotc
+  # - soc-sign-bitcoinalpha
+  # - ca-condmat
+  # - ca-hepph
+  # - ca-astroph
+  # - scc-infect-dublin
+  # - ia-frwikinews-user-edits
+  # - edit-enwikibooks
+  - bio-wormnet-v3
+  # # End of target datasets, additional datasets can be added below for further analysis
+  # - lfr-large-community-size
+  # - sx-mathoverflow
+  # - lfr-small-community-size
+  # - scc-infect-hyper
+  # - scc-tweeter-copen
+  # - scc-retweet
+
+common: &common_settings
+  max_steps: 9
+  initial_fraction: 0.4
+  # batch_range: 0.001 # Large
+  # batch_range: 0.0001 # Medium
+  batch_range: 0.00001 # Small
+
 datasets:
   bio-wormnet-v3:
     path: ./data/bio-WormNet-v3.txt
     dataset_name: bio-WormNet-v3
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-4
-    initial_fraction: 0.4
-    max_steps: 9
     delimiter: " "
+    <<: *common_settings
 
   ca-astroph:
     path: ./data/ca-AstroPh.txt
     dataset_name: ca-AstroPh
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-4
-    initial_fraction: 0.4
-    max_steps: 9
+    <<: *common_settings
 
   ca-condmat:
     path: ./data/ca-CondMat.txt
     dataset_name: ca-CondMat
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-4
-    initial_fraction: 0.4
-    max_steps: 10
+    <<: *common_settings
 
   ca-hepph:
     path: ./data/ca-HepPh.txt
     dataset_name: ca-HepPh
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-4
-    initial_fraction: 0.4
-    max_steps: 10
+    <<: *common_settings
 
   college-msg:
     path: ./data/CollegeMsg.txt
     dataset_name: CollegeMsg
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-3
-    initial_fraction: 0.4
     delimiter: " "
-    max_steps: 10
+    <<: *common_settings
 
   edit-enwikibooks:
     path: ./data/edit-enwikibooks.txt
     dataset_name: edit-enwikibooks
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-4
-    initial_fraction: 0.4
-    max_steps: 9
     delimiter: " "
+    <<: *common_settings
 
   ia-contacts-dublin:
     path: ./data/ia-contacts_dublin.txt
     dataset_name: ia-contacts-dublin
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-3
-    initial_fraction: 0.4
-    max_steps: 9
     delimiter: ","
+    <<: *common_settings
 
   ia-digg-reply:
     path: ./data/ia-digg-reply.txt
     dataset_name: ia-digg-reply
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-5
-    initial_fraction: 0.4
-    max_steps: 10
     delimiter: " "
+    <<: *common_settings
 
   ia-frwikinews-user-edits:
     path: ./data/ia-frwikinews-user-edits.txt
     dataset_name: ia-frwikinews-user-edits
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-4
-    initial_fraction: 0.4
-    max_steps: 9
     delimiter: " "
+    <<: *common_settings
 
   lfr-large-community-size:
     path: data/lfr_large_community_size.txt
     dataset_name: lfr_large_community_size
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-4
-    initial_fraction: 0.4
-    max_steps: 9
     delimiter: " "
+    <<: *common_settings
 
   lfr-small-community-size:
     path: data/lfr_small_community_size.txt
     dataset_name: lfr_small_community_size
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-4
-    initial_fraction: 0.4
-    max_steps: 9
     delimiter: " "
+    <<: *common_settings
 
   scc-infect-dublin:
     path: data/scc_infect-dublin.txt
     dataset_name: scc_infect_dublin
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-4
-    initial_fraction: 0.4
-    max_steps: 9
     delimiter: " "
+    <<: *common_settings
 
   scc-infect-hyper:
     path: data/scc_infect-hyper.txt
     dataset_name: scc_infect_hyper
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-4
-    initial_fraction: 0.4
-    max_steps: 9
     delimiter: " "
+    <<: *common_settings
+
+  scc-retweet:
+    path: data/scc_retweet.txt
+    dataset_name: scc_retweet
+    source_idx: 0
+    target_idx: 1
+    delimiter: " "
+    <<: *common_settings
+
+  scc-tweeter-copen:
+    path: data/scc_tweeter_copen.txt
+    dataset_name: scc_tweeter_copen
+    source_idx: 0
+    target_idx: 1
+    delimiter: " "
+    <<: *common_settings
 
   soc-sign-bitcoinalpha:
     path: data/soc-sign-bitcoinalpha.csv
     dataset_name: soc_sign_bitcoin_alpha
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-4
-    initial_fraction: 0.4
-    max_steps: 9
     delimiter: ","
+    <<: *common_settings
 
   soc-sign-bitcoinotc:
     path: data/soc-sign-bitcoinotc.csv
     dataset_name: soc_sign_bitcoin_otc
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-3
-    initial_fraction: 0.4
-    max_steps: 10
     delimiter: ","
+    <<: *common_settings
 
   sx-askubuntu:
     path: data/sx-askubuntu.txt
     dataset_name: sx_askubuntu
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-4
-    initial_fraction: 0.4
-    max_steps: 9
     delimiter: " "
+    <<: *common_settings
 
   sx-mathoverflow:
     path: data/sx-mathoverflow.txt
     dataset_name: sx_mathoverflow
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-4
-    initial_fraction: 0.4
-    max_steps: 9
     delimiter: " "
+    <<: *common_settings
 
   synthetic-graph:
     path: data/synthetic_graph.txt
     dataset_name: synthetic_graph
     source_idx: 0
     target_idx: 1
-    batch_range: 1e-5
-    initial_fraction: 0.6
-    max_steps: 10
     delimiter: " "
+    <<: *common_settings
