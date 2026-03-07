@@ -24,15 +24,18 @@ target_algorithms:
   - coach
   - percomvc
   - core_expansion
+  - df_louvain
 
 # All available algorithms with their configurations
-overlapping_algorithms:
+algorithms:
   algorithm_name:
     module: "module.path"
     function: "function_name"
     params:
       param1: value1
       param2: value2
+    type: "static" or "dynamic"
+    clustering_type: "overlapping" or "crisp"
     metadata: {}
     description: "Algorithm description"
 ```
@@ -42,22 +45,26 @@ overlapping_algorithms:
 | Field | Type | Description |
 |-------|------|-------------|
 | `target_algorithms` | list | List of algorithm names to run in benchmarks |
-| `overlapping_algorithms` | dict | All available algorithms with their configurations |
-| `module` | str | Python module path (e.g., `cdlib.algorithms` or `src.static_methods.big_clam`) |
+| `algorithms` | dict | All available algorithms with their configurations |
+| `module` | str | Python module path (e.g., `cdlib.algorithms` or `src.models.static_methods.overlap.big_clam`) |
 | `function` | str | Function or class name to import |
 | `params` | dict | Algorithm parameters |
+| `type` | str | Algorithm type: `"static"` (per-snapshot) or `"dynamic"` (full temporal graph) |
+| `clustering_type` | str | Clustering type: `"overlapping"` or `"crisp"` — determines which modularity metric to use |
 | `metadata` | dict | Additional metadata for the algorithm |
 | `description` | str | Human-readable description |
 
 ### Example: Adding a CDlib Algorithm
 
 ```yaml
-overlapping_algorithms:
+algorithms:
   angel:
     module: "cdlib.algorithms"
     function: "angel"
     params:
       threshold: 0.25
+    type: "static"
+    clustering_type: "crisp"
     metadata: {}
     description: "ANGEL: A New Graph-based Entity Linking algorithm"
 ```
@@ -65,24 +72,44 @@ overlapping_algorithms:
 ### Example: Adding a Custom Algorithm
 
 ```yaml
-overlapping_algorithms:
+algorithms:
   my_algorithm:
-    module: "src.static_methods.my_algorithm"
+    module: "src.models.static_methods.overlap.my_algorithm"
     function: "MyAlgorithm"
     params:
       param1: 0.5
       param2: 100
+    type: "static"
+    clustering_type: "overlapping"
     metadata:
       author: "Your Name"
       year: 2025
     description: "My Custom Algorithm for community detection"
 ```
 
+### Clustering Type
+
+The `clustering_type` field determines which modularity metric is used for evaluation:
+
+- **`crisp`**: Each node belongs to exactly one community. Uses **Newman-Girvan modularity**.
+- **`overlapping`**: Nodes can belong to multiple communities. Uses **overlapping modularity Q0**.
+
 ### Available Algorithms
 
 The following algorithms are currently configured:
 
+#### Crisp (Non-Overlapping) Algorithms
+
 - **ANGEL**: A fast, local-first overlapping community detection algorithm
+- **Core Expansion**: Core Expansion algorithm
+- **UMSTMO**: Universal Multi-Scale Community Detection
+- **Walkscan**: Walk-based SCAN algorithm
+- **EBGC**: Entropy-based Graph Clustering
+- **DFLouvain**: Dynamic Frontier Louvain for temporal graphs
+- **StaticLouvain**: Static Louvain community detection
+
+#### Overlapping Algorithms
+
 - **DEMON**: Democratic Estimate of the Modular Organization of a Network
 - **COACH**: Core-Attachment based clustering
 - **NDOCD**: Network Decomposition-based Overlapping Community Detection
@@ -90,14 +117,13 @@ The following algorithms are currently configured:
 - **CosineOverlap**: Overlapping community detection using cosine similarity
 - **SLPA**: Speaker-Listener Label Propagation Algorithm
 - **Percomvc**: Permanence based Overlapping Community Detection
-- **Core Expansion**: Core Expansion algorithm
 - **Graph Entropy**: Graph Entropy based community detection
-- **UMSTMO**: Universal Multi-Scale Community Detection
 - **DPCLUS**: Density-Periphery based Clustering
 - **IPCA**: Iterative Principal Component Analysis
 - **LAIS2**: Label Propagation with Improved Seed Selection
-- **Walkscan**: Walk-based SCAN algorithm
 - **DCS**: Distributed Community Search
+- **LFM**: Lancichinetti-Fortunato-Radicchi benchmark
+- **TILES**: Temporal Incremental Local Expansion for streaming community detection
 - **LFM**: Lancichinetti-Fortunato-Radicchi benchmark
 - **EBGC**: Entropy-based Graph Clustering
 
@@ -356,7 +382,7 @@ If you encounter YAML syntax errors:
 
 If you get "Algorithm not found" error:
 
-1. Verify algorithm is in `overlapping_algorithms` dict
+1. Verify algorithm is in `algorithms` dict
 2. Check that `module` and `function` paths are correct
 3. Ensure algorithm is in `target_algorithms` list
 

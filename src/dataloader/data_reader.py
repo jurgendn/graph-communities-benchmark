@@ -1,3 +1,7 @@
+import glob
+import os
+from pathlib import Path
+
 import networkx as nx
 import numpy as np
 
@@ -88,16 +92,23 @@ def load_txt_dataset(
 
     batch_size = max(1, int(batch_range * len(data)))
     temporal_changes = []
-
-    for batch_idx in range(min(num_batches, len(remaining_edges) // batch_size + 1)):
-        start_idx = batch_idx * batch_size
-        end_idx = min(start_idx + batch_size, len(remaining_edges))
-
-        if start_idx >= len(remaining_edges):
-            break
-
-        batch = remaining_edges[start_idx:end_idx]
+    
+    # Track current position in remaining_edges
+    current_idx = 0
+    
+    while current_idx < len(remaining_edges) and len(temporal_changes) < num_batches:
+        # Calculate end index, ensuring at least 1 edge is taken
+        end_idx = min(current_idx + batch_size, len(remaining_edges))
+        
+        # Ensure we take at least 1 edge
+        if end_idx <= current_idx:
+            end_idx = current_idx + 1
+        
+        batch = remaining_edges[current_idx:end_idx]
         insertions = [(node1, node2, {"weight": 1}) for node1, node2 in batch]
+        
+        # Move current_idx forward to mark edges as processed
+        current_idx = end_idx
 
         deletions = []
         current_edges = list(G.edges())
@@ -131,3 +142,104 @@ def load_txt_dataset(
         temporal_changes = temporal_changes[:max_steps]
 
     return TemporalGraph(base_graph=initial_G, steps=temporal_changes)
+
+
+def load_lfr_folder(
+    folder_path: str,
+    ground_truth_attr: str = "label",
+    max_steps: int | None = None,
+) -> TemporalGraph:
+    """
+    Load LFR benchmark graphs from a folder of GraphML files.
+    
+    Expects files named snapshot_t0.graphml, snapshot_t1.graphml, etc.
+    
+    Args:
+        folder_path: Path to folder containing GraphML snapshot files
+        ground_truth_attr: Node attribute for ground truth (default: 'label')
+        max_steps: Maximum number of snapshots to load (default: all)
+    
+    Returns:
+        TemporalGraph with ground truth attribute stored
+    
+    Example:
+        >>> tg = load_lfr_folder(
+        ...     folder_path="./data/lfr_benchmark",
+        ...     ground_truth_attr="label",
+        ...     max_steps=10
+        ... )
+    """
+    if not os.path.exists(folder_path):
+        raise FileNotFoundError(f"Folder not found: {folder_path}")
+    
+    # Find all GraphML files and extract indices
+    graphml_files = glob.glob(os.path.join(folder_path, "*.graphml"))
+    
+    if not graphml_files:
+        raise ValueError(f"No .graphml files found in {folder_path}")
+    
+    # Extract snapshot indices and sort
+    snapshot_files = []
+    for filepath in graphml_files:
+        filename = os.path.basename(filepath)
+        # Expected format: snapshot_t{index}.graphml
+        if filename.startswith("snapshot_t") and filename.endswith(".graphml"):
+            try:
+                index_str = filename[len("snapshot_t"):-len(".graphml")]
+                index = int(index_str)
+                snapshot_files.append((index, filepath))
+            except ValueError:
+                continue
+    
+    if not snapshot_files:
+        raise ValueError(
+            f"No valid snapshot files found. Expected format: snapshot_t0.graphml, "
+            f"snapshot_t1.graphml, etc."
+        )
+    
+    # Sort by index
+    snapshot_files.sort(key=lambda x: x[0])
+    
+    # Load all snapshots
+    snapshots = []
+    for index, filepath in snapshot_files:
+        G = nx.read_graphml(filepath)
+        snapshots.append(G)
+    
+    # Limit to max_steps if specified
+    if max_steps is not None:
+        snapshots = snapshots[:max_steps + 1]  # +1 because first snapshot is base
+    
+    if len(snapshots) < 2:
+        raise ValueError("Need at least 2 snapshots for temporal graph")
+    
+    # Detect temporal changes between consecutive snapshots
+    steps = []
+    for i in range(1, len(snapshots)):
+        prev_graph = snapshots[i - 1]
+        curr_graph = snapshots[i]
+        
+        # Node changes
+        prev_nodes = set(prev_graph.nodes())
+        curr_nodes = set(curr_graph.nodes())
+        
+        # Edge changes
+        prev_edges = set(prev_graph.edges())
+        curr_edges = set(curr_graph.edges())
+        
+        insertions = list(curr_edges - prev_edges)
+        deletions = list(prev_edges - curr_edges)
+        
+        steps.append(TemporalChanges(
+            deletions=deletions,
+            insertions=insertions,
+        ))
+    
+    # Create TemporalGraph
+    base_graph = snapshots[0]
+    tg = TemporalGraph(base_graph=base_graph, steps=steps)
+    
+    # Store ground truth attribute for evaluation
+    tg._ground_truth_attr = ground_truth_attr
+    
+    return tg

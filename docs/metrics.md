@@ -8,13 +8,29 @@ The benchmark tracks multiple metrics for each algorithm to evaluate their perfo
 
 ## Supported Metrics
 
-| Metric | Description | Type |
-|--------|-------------|------|
-| **Runtime** | Execution time per snapshot (seconds) | Performance |
-| **CDlib Modularity** | Overlapping modularity score from CDlib | Quality |
-| **Custom Q0 Modularity** | Optimized overlapping modularity with Numba | Quality |
-| **Number of Communities** | Communities detected per snapshot | Structure |
-| **Affected Nodes** | Number of nodes in each snapshot | Scale |
+| Metric | Description | Applicable To |
+|--------|-------------|---------------|
+| **Runtime** | Execution time per snapshot (seconds) | All |
+| **CDlib Modularity** | Girvan-Newman (crisp) or overlapping modularity | All |
+| **Custom Q0 Modularity** | Custom Q0 (overlapping) or 0 (crisp) | All |
+| **Number of Communities** | Communities detected per snapshot | All |
+| **Affected Nodes** | Number of nodes in each snapshot | All |
+
+## Modularity Calculation by Clustering Type
+
+The framework automatically selects the appropriate modularity metric based on the algorithm's `clustering_type`:
+
+### Crisp Algorithms
+
+For **crisp** community detection (each node belongs to exactly one community):
+- **CDlib Modularity**: Girvan-Newman modularity (NetworkX `community.modularity`)
+- **Custom Q0**: Set to `0` (not applicable for crisp partitions)
+
+### Overlapping Algorithms
+
+For **overlapping** community detection (nodes can belong to multiple communities):
+- **CDlib Modularity**: CDlib's `modularity_overlap` score
+- **Custom Q0**: Optimized Q0 implementation with Numba acceleration
 
 ## Detailed Metrics
 
@@ -85,17 +101,46 @@ where `f(alpha_u, alpha_v) = (alpha_u + alpha_v) / 2`
 
 **Usage**: Monitor graph evolution and ensure consistent processing across snapshots.
 
-## Modularity Stability
+## Ground Truth Evaluation (NMI)
 
-**Description**: Range of modularity values across all snapshots.
+For benchmark graphs with known ground truth communities (e.g., LFR graphs), 
+the framework computes Normalized Mutual Information (NMI) to measure how well detected communities match the ground truth.
 
-**Calculation**: `max(modularity) - min(modularity)`
+### Overview
 
-**Purpose**: Measures the consistency of algorithm performance across temporal evolution.
+When ground truth is available (via node attribute), 
+the framework calculates:
 
-**Interpretation**:
-- Lower values: More consistent performance
-- Higher values: Performance varies significantly across snapshots
+| Metric | Description | Clustering Type |
+|--------|-------------|-----------------|
+| **NMI** | Standard Normalized Mutual Information | Crisp |
+| **ONMI-MGH** | Overlapping NMI (McDaid-Greene-Hurley) | Overlapping |
+
+### Ground Truth Format
+
+The ground truth is stored in a node attribute (configurable, default: `label`):
+
+| Type | Attribute Value | Example |
+|------|-----------|-------|---------|
+| **Crisp** | Single int | `graph.nodes[0]['label'] = 1` |
+| **Overlapping** | Comma-separated string | `graph.nodes[0]['label'] = '1,23,4,5'` |
+
+### Usage
+
+```bash
+python main.py \
+    --lfr-folder ./data/lfr_benchmark \
+    --ground-truth-attr label \
+    --max-steps 10
+```
+
+### NMI Metrics
+
+- **NMI** (0-1): 1 = perfect match, 0 = no mutual information
+- **ONMI-MGH** (0-1): Extended NMI for overlapping communities
+
+Reference: McDaid, A. F., Greene, D., & Hurley, N. (2011). Normalized mutual information to evaluate overlapping community detection.
+```
 
 ## Metric Logging
 

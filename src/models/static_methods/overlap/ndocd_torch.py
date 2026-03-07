@@ -1,10 +1,13 @@
-from typing import Optional
+from typing import List, Optional
 from cdlib import NodeClustering
 import networkx as nx
 import torch
 
+from src.algorithms.base import CommunityDetectionAlgorithm
+from src.factory.factory import TemporalGraph
 
-class NDOCDTorch:
+
+class NDOCDTorch(CommunityDetectionAlgorithm):
     """
     GPU-accelerated implementation of Overlapping Community Detection based on 
     Network Decomposition (NDOCD) using PyTorch.
@@ -326,5 +329,13 @@ class NDOCDTorch:
         )
         return node_clustering
 
-    def __call__(self, G: nx.Graph) -> NodeClustering:
+    def _process_snapshot(self, G: nx.Graph) -> NodeClustering:
+        """Run NDOCDTorch on a single graph snapshot."""
         return self.execute(G)
+
+    def __call__(self, tg: TemporalGraph) -> List[NodeClustering]:
+        """Run NDOCDTorch on each snapshot of the temporal graph."""
+        results = []
+        for snapshot in tg.iter_snapshots():
+            results.append(self._process_snapshot(snapshot))
+        return results

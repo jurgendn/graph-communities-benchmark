@@ -8,6 +8,7 @@ The benchmark framework provides two ways to run experiments:
 
 1. **Configuration-based scripts**: Read from YAML configuration files (recommended)
 2. **Direct command-line**: Pass parameters directly to Python scripts
+3. **Unified entry point**: Use `main.py` for both static and dynamic algorithms
 
 ## Method 1: Using Configuration-Based Scripts (Recommended)
 
@@ -24,16 +25,23 @@ This will display all datasets configured in [`config/dataset_config.yaml`](../c
 ### Run Benchmarks for All Target Datasets
 
 ```bash
-# Run static benchmarks
+# Run with unified entry point (main.py) - recommended
+./scripts/benchmark.sh --all main.py
+
+# Run static benchmarks only
 ./scripts/benchmark.sh --all main_static.py
 
-# Run dynamic benchmarks
+# Run dynamic benchmarks only
 ./scripts/benchmark.sh --all main_dynamic.py
 ```
 
 ### Run Benchmarks for a Specific Dataset
 
 ```bash
+# Unified entry point (recommended)
+./scripts/benchmark.sh college-msg main.py
+
+# Legacy scripts
 ./scripts/benchmark.sh college-msg main_static.py
 ./scripts/benchmark.sh bio-wormnet-v3 main_static.py
 ```
@@ -42,10 +50,10 @@ This will display all datasets configured in [`config/dataset_config.yaml`](../c
 
 ```bash
 # Run 5 times for each dataset
-./scripts/benchmark.sh college-msg main_static.py 5
+./scripts/benchmark.sh college-msg main.py 5
 
 # Run 3 times for all datasets
-./scripts/benchmark.sh --all main_static.py 3
+./scripts/benchmark.sh --all main.py 3
 ```
 
 ### Script Options
@@ -55,10 +63,36 @@ This will display all datasets configured in [`config/dataset_config.yaml`](../c
 | `--all` | Run benchmarks for all target datasets |
 | `--list` | List all available datasets |
 | `<dataset_name>` | Run benchmarks for a specific dataset |
-| `<main_script>` | Entry point script (`main_static.py` or `main_dynamic.py`) |
+| `<main_script>` | Entry point script (`main.py`, `main_static.py`, or `main_dynamic.py`) |
 | `<num_runs>` | Number of times to run the benchmark (default: 1) |
 
-## Method 2: Direct Command-Line Execution
+## Method 2: Unified Entry Point (main.py)
+
+The recommended way to run benchmarks is using `main.py`, which automatically handles both static and dynamic algorithms:
+
+```bash
+# Basic usage
+python main.py --dataset CollegeMsg --max-steps 10
+
+# With custom parameters
+python main.py \
+    --dataset-path ./data/CollegeMsg.txt \
+    --dataset CollegeMsg \
+    --source-idx 0 \
+    --target-idx 1 \
+    --batch-range 1e-4 \
+    --initial-fraction 0.4 \
+    --max-steps 10 \
+    --num-runs 5
+```
+
+The unified entry point:
+1. Loads algorithms from `config/algorithms.yaml`
+2. Runs each algorithm through the pipeline
+3. Evaluates results (crisp or overlapping modularity based on algorithm type)
+4. Logs to Comet ML
+
+## Method 3: Direct Command-Line Execution (Legacy)
 
 ### Running Static Benchmarks
 
@@ -72,6 +106,16 @@ PYTHONPATH=. python main_static.py \
     --target-idx 1 \
     --batch-range 1e-4 \
     --initial-fraction 0.4 \
+    --max-steps 10
+```
+
+### Running LFR Benchmark with Ground Truth
+
+```bash
+# Using LFR folder with ground truth
+python main.py \
+    --lfr-folder ./data/lfr_benchmark \
+    --ground-truth-attr label \
     --max-steps 10
 ```
 

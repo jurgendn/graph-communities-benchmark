@@ -18,67 +18,73 @@ This guide provides detailed instructions for extending and customizing the Grap
 
 This section guides you through adding new community detection algorithms to the benchmark framework.
 
+### Unified API
+
+All algorithms must implement the `CommunityDetectionAlgorithm` interface:
+
+```python
+from abc import ABC, abstractmethod
+from typing import List
+from cdlib import NodeClustering
+from src.factory.factory import TemporalGraph
+
+class CommunityDetectionAlgorithm(ABC):
+    @abstractmethod
+    def __call__(self, tg: TemporalGraph) -> List[NodeClustering]:
+        """Run community detection on a temporal graph."""
+        pass
+```
+
 ### Adding a Custom Static Algorithm
 
-To add a custom static overlapping community detection algorithm:
+A ready-to-use template is provided at [`templates/static_algorithm_template.py`](../templates/static_algorithm_template.py). Copy it and follow the steps below.
 
 #### Step 1: Create the Algorithm Class
 
-Create a new Python file in [`src/static_methods/`](src/static_methods/) with your algorithm implementation. The class should:
-
-1. Accept a [`networkx.Graph`](https://networkx.org/documentation/stable/reference/classes/graph.html) as input
-2. Return a [`cdlib.NodeClustering`](https://cdlib.readthedocs.io/en/latest/reference/classes.html#nodeclustering) object
-
-Example implementation (see [`src/static_methods/big_clam.py`](src/static_methods/big_clam.py)):
+Create a new Python file in [`src/models/static_methods/overlap/`](../src/models/static_methods/overlap/) or [`src/models/static_methods/crisp/`](../src/models/static_methods/crisp/) depending on whether it's overlapping or crisp. The class should inherit from `CommunityDetectionAlgorithm`:
 
 ```python
 """Your Algorithm: Description of your algorithm."""
 
+from typing import List
 import networkx as nx
 from cdlib import NodeClustering
 
-class YourAlgorithm:
+from src.algorithms.base import CommunityDetectionAlgorithm
+from src.factory.factory import TemporalGraph
+
+
+class YourAlgorithm(CommunityDetectionAlgorithm):
     """Detect overlapping communities using your method."""
-    
+
     def __init__(
         self,
         param1: float = 0.5,
         param2: int = 100,
-        seed: int = 123
     ):
-        """
-        Initialize YourAlgorithm parameters.
-        
-        Args:
-            param1: Description of parameter 1
-            param2: Description of parameter 2
-            seed: Random seed for reproducibility
-        """
+        """Initialize YourAlgorithm parameters."""
         self.param1 = param1
         self.param2 = param2
-        self.seed = seed
-    
-    def __call__(self, graph: nx.Graph) -> NodeClustering:
+
+    def __call__(self, tg: TemporalGraph) -> List[NodeClustering]:
         """
-        Run the algorithm on the input graph.
-        
+        Run the algorithm on each snapshot of the temporal graph.
+
         Args:
-            graph: NetworkX graph object
-            
+            tg: TemporalGraph with snapshots
+
         Returns:
-            NodeClustering object containing detected communities
+            List[NodeClustering], one per snapshot
         """
-        # Your implementation here
-        # 1. Detect communities
-        communities = self._detect_communities(graph)
-        
-        # 2. Return as NodeClustering object
-        return NodeClustering(communities, graph, "YourAlgorithm")
-    
-    def _detect_communities(self, graph: nx.Graph) -> list[set]:
+        results = []
+        for snapshot in tg.iter_snapshots():
+            communities = self._detect_communities(snapshot)
+            results.append(NodeClustering(communities, snapshot, "YourAlgorithm"))
+        return results
+
+    def _detect_communities(self, graph: nx.Graph) -> List[List]:
         """Internal method to detect communities."""
         # Your community detection logic here
-        # Return a list of sets, where each set contains node IDs
         pass
 ```
 
@@ -87,18 +93,19 @@ class YourAlgorithm:
 Add your algorithm to [`config/algorithms.yaml`](config/algorithms.yaml):
 
 ```yaml
-overlapping_algorithms:
+algorithms:
   # ... existing algorithms ...
-  
+
   your_algorithm:
-    module: "src.static_methods.your_algorithm"  # Path to your module
-    function: "YourAlgorithm"                     # Class name
+    module: "src.models.static_methods.overlap.your_algorithm"
+    function: "YourAlgorithm"
     params:
       param1: 0.5
       param2: 100
-      seed: 123
+    type: "static"
+    clustering_type: "overlapping"  # or "crisp"
     metadata: {}
-    description: "Your Algorithm: Brief description"
+    description: "Your Algorithm Description"
 ```
 
 #### Step 3: Add to Target Algorithms
@@ -114,89 +121,83 @@ target_algorithms:
 
 ### Adding a Custom Dynamic Algorithm
 
-To add a custom dynamic community detection algorithm:
+### Adding a Custom Dynamic Algorithm
+
+A ready-to-use template is provided at [`templates/dynamic_algorithm_template.py`](../templates/dynamic_algorithm_template.py). Copy it and follow the steps below.
 
 #### Step 1: Create the Algorithm Class
 
-Create a new Python file in [`src/dynamic_methods/`](src/dynamic_methods/) with your algorithm implementation. The class should:
-
-1. Accept a [`TemporalGraph`](src/factory/factory.py) object as input
-2. Return a [`MethodDynamicResults`](src/factory/communities.py) object
-
-Example implementation (see [`src/dynamic_methods/tiles.py`](src/dynamic_methods/tiles.py)):
+Create a new Python file in [`src/models/dynamic_methods/overlap/`](../src/models/dynamic_methods/overlap/) or [`src/models/dynamic_methods/crisp/`](../src/models/dynamic_methods/crisp/) depending on whether it's overlapping or crisp. The class should inherit from `CommunityDetectionAlgorithm`:
 
 ```python
 """Your Dynamic Algorithm: Description of your algorithm."""
 
-from src.factory.communities import MethodDynamicResults
+from typing import List
+import networkx as nx
+from cdlib import NodeClustering
+
+from src.algorithms.base import CommunityDetectionAlgorithm
 from src.factory.factory import TemporalGraph
 
-class YourDynamicAlgorithm:
+
+class YourDynamicAlgorithm(CommunityDetectionAlgorithm):
     """Detect communities in dynamic/temporal graphs."""
-    
+
     def __init__(self, obs: int = 1):
-        """
-        Initialize YourDynamicAlgorithm parameters.
-        
-        Args:
-            obs: Observation window size
-        """
+        """Initialize YourDynamicAlgorithm parameters."""
         self.obs = obs
-    
-    def __call__(self, tg: TemporalGraph) -> MethodDynamicResults:
+
+    def __call__(self, tg: TemporalGraph) -> List[NodeClustering]:
         """
         Run the algorithm on the temporal graph.
-        
+
         Args:
             tg: TemporalGraph object with snapshots
-            
+
         Returns:
-            MethodDynamicResults object containing detected communities
+            List[NodeClustering], one per snapshot
         """
-        results = MethodDynamicResults()
-        
+        results = []
+
         # Your implementation here
         for snapshot in tg.iter_snapshots():
             # Detect communities for this snapshot
             communities = self._detect_communities(snapshot)
-            
-            # Store results
-            results.update_intermediate_results(
-                runtime=0.0,  # Actual runtime
-                cdlib_modularity_overlap=0.0,  # Actual modularity
-                customize_q0_overlap=0.0,  # Actual modularity
-                affected_nodes=snapshot.number_of_nodes(),
-                num_communities=len(communities)
-            )
-        
+            results.append(NodeClustering(communities, snapshot, "YourDynamicAlgorithm"))
+
         return results
-    
-    def _detect_communities(self, graph):
+
+    def _detect_communities(self, graph: nx.Graph) -> List[List]:
         """Internal method to detect communities."""
         # Your community detection logic here
         pass
 ```
 
-#### Step 2: Register in Benchmark
+#### Step 2: Register in Config
 
-Register your algorithm in the `run_dynamic_benchmark()` function in [`src/benchmark.py`](src/benchmark.py):
+Add your algorithm to [`config/algorithms.yaml`](config/algorithms.yaml):
 
-```python
-def run_dynamic_benchmark(
-    temporal_graph: TemporalGraph,
-    algorithm_names: list[str] | None = None,
-) -> dict[str, MethodDynamicResults]:
-    ALGORITHMS_OVERLAPPING = {
-        "tiles": {
-            "func": dynamic_methods.Tiles(obs=1),
-            "params": {},
-        },
-        "your_algorithm": {  # Add your algorithm here
-            "func": dynamic_methods.YourDynamicAlgorithm(obs=1),
-            "params": {},
-        }
-    }
-    # ... rest of the function
+```yaml
+algorithms:
+  your_dynamic_algorithm:
+    module: "src.models.dynamic_methods.overlap.your_dynamic_algorithm"
+    function: "YourDynamicAlgorithm"
+    params:
+      obs: 1
+    type: "dynamic"
+    clustering_type: "overlapping"  # or "crisp"
+    metadata: {}
+    description: "Your Dynamic Algorithm Description"
+```
+
+#### Step 3: Add to Target Algorithms
+
+Add your algorithm to the `target_algorithms` list:
+
+```yaml
+target_algorithms:
+  - tiles
+  - your_dynamic_algorithm
 ```
 
 ### Using Existing CDlib Algorithms
@@ -204,13 +205,15 @@ def run_dynamic_benchmark(
 If you want to use an existing algorithm from the [CDlib library](https://cdlib.readthedocs.io/), simply add it to [`config/algorithms.yaml`](config/algorithms.yaml):
 
 ```yaml
-overlapping_algorithms:
+algorithms:
   # Example: Adding a CDlib algorithm
   angel:
     module: "cdlib.algorithms"
     function: "angel"
     params:
       threshold: 0.25
+    type: "static"
+    clustering_type: "crisp"
     metadata: {}
     description: "ANGEL: A New Graph-based Entity Linking algorithm"
 ```
@@ -220,11 +223,11 @@ overlapping_algorithms:
 After adding your algorithm, test it by running a benchmark:
 
 ```bash
-# Using the generic benchmark script
-./scripts/benchmark.sh college-msg main_static.py
+# Using main.py (unified entry point)
+python main.py --dataset CollegeMsg --max-steps 10
 
 # Or directly with Python
-PYTHONPATH=. python main_static.py \
+PYTHONPATH=. python main.py \
     --dataset-path ./data/CollegeMsg.txt \
     --dataset CollegeMsg \
     --source-idx 0 \
@@ -233,6 +236,77 @@ PYTHONPATH=. python main_static.py \
     --initial-fraction 0.4 \
     --max-steps 10
 ```
+
+---
+
+---
+
+### Adding LFR Benchmark Datasets
+
+The framework supports LFR (Lancichinetti-Fortunato-Radicchi) benchmark graphs with ground truth communities.
+
+#### LFR Folder Structure
+
+Place your LFR snapshot files in a folder:
+
+```
+data/lfr_benchmark/
+├── snapshot_t0.graphml   # nx.Graph saved as GraphML with 'label' attribute
+├── snapshot_t1.graphml
+└── ...
+```
+
+Each GraphML file contains an `nx.Graph` object with ground truth in node attributes.
+
+#### File Naming
+
+The loader expects files named `snapshot_t{index}.graphml`. The index starts from 0.
+
+#### Generating LFR Snapshots
+
+Use the built-in LFR generator:
+
+```python
+from src.utils.lfr_generator.generator import (
+    unweighted_undirected_lfr_graph,
+    save_temporal_networkx_snapshots,
+)
+
+edges, memberships = unweighted_undirected_lfr_graph(
+    num_nodes=500,
+    average_k=10,
+    mu=0.1,
+    tau1=3.0,
+    tau2=1.0,
+    com_size_min=10,
+    com_size_max=50,
+    overlapping_nodes=0,
+    overlap_membership=0,
+    seed=42,
+)
+
+save_temporal_networkx_snapshots(
+    snapshots=memberships,
+    output_prefix="data/lfr_benchmark/my_lfr",
+    format="graphml",
+)
+```
+
+This creates `data/lfr_benchmark/my_lfr/snapshot_t0.graphml`, `snapshot_t1.graphml`, etc.
+
+#### Running the Benchmark on LFR Data
+
+```bash
+python main.py \
+    --lfr-folder ./data/lfr_benchmark/my_lfr \
+    --ground-truth-attr label \
+    --max-steps 10
+```
+
+#### Ground Truth Attribute
+
+- **Crisp**: Node attribute as integer, e.g., `graph.nodes[0]['label'] = 1`
+- **Overlapping**: Node attribute as comma-separated string, e.g., `graph.nodes[0]['label'] = '1,23,4,5'`
 
 ---
 
@@ -305,25 +379,44 @@ def your_metric(graph: nx.Graph, communities: NodeClustering) -> float:
     return score
 ```
 
-### Step 2: Register in Benchmark
+### Step 2: Register in the Pipeline
 
-Add your metric to the benchmark runner in [`src/benchmark.py`](src/benchmark.py):
+Add your metric to the `evaluate()` function in [`src/pipeline_utils.py`](../src/pipeline_utils.py).
+
+For each snapshot, compute your metric after the existing modularity call and
+store the trace on `results`:
 
 ```python
-# In run_static_benchmark()
-for step_idx, snapshot in enumerate(steps_bar):
-    # ... existing code ...
-    
-    your_metric_score = your_metric(snapshot, communities)
-    
-    intermediate = IntermediateResults(
-        runtime=elapsed,
-        cdlib_modularity_overlap=cdlib_modularity,
-        customize_q0_overlap=q0_modularity,
-        affected_nodes=snapshot.number_of_nodes(),
-        num_communities=len(communities.communities),
-        your_metric=your_metric_score,  # Add your metric
-    )
+# src/pipeline_utils.py — inside evaluate(), in the per-snapshot loop
+your_metric_score = your_metric(snapshot, communities)
+
+# Append to a trace list on results (add this attribute to MethodDynamicResults too)
+results.your_metric_trace.append(your_metric_score)
+```
+
+Also add the corresponding field and summary property to
+`MethodDynamicResults` in [`src/factory/communities.py`](../src/factory/communities.py):
+
+```python
+class MethodDynamicResults(BaseModel):
+    # ... existing fields ...
+    your_metric_trace: List[float] = []
+
+    @property
+    def avg_your_metric(self) -> float:
+        if not self.your_metric_trace:
+            return 0.0
+        return sum(self.your_metric_trace) / len(self.your_metric_trace)
+```
+
+Finally, log it in `log_results()` (also in `src/pipeline_utils.py`):
+
+```python
+# Summary metric
+summary_metrics["avg_your_metric"] = results.avg_your_metric
+
+# Per-step metric
+step_metrics["your_metric"] = results.your_metric_trace[step]
 ```
 
 ### Step 3: Add to Visualization Config
@@ -348,11 +441,13 @@ The benchmark uses YAML configuration files for easy customization:
 ### Algorithm Configuration ([`config/algorithms.yaml`](config/algorithms.yaml))
 
 - `target_algorithms`: List of algorithms to run in benchmarks
-- `overlapping_algorithms`: All available algorithms with their configurations
+- `algorithms`: All available algorithms with their configurations
 - Each algorithm entry includes:
   - `module`: Python module path
   - `function`: Function or class name
   - `params`: Algorithm parameters
+  - `type`: Algorithm type ("static" or "dynamic")
+  - `clustering_type`: Clustering type ("crisp" or "overlapping")
   - `metadata`: Additional metadata
   - `description`: Algorithm description
 

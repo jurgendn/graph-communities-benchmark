@@ -1,30 +1,44 @@
 from typing import List
 
 import numpy as np
+from cdlib import NodeClustering
 from pydantic import BaseModel
 
 
 class IntermediateResults(BaseModel):
+    step: int = 0
     runtime: float = 0.0
     cdlib_modularity_overlap: float = 0.0
     customize_q0_overlap: float = 0.0
     affected_nodes: int = 0
     num_communities: int = 0
 
+    @classmethod
+    def from_dict(cls, data: dict, **kwargs) -> "IntermediateResults":
+        """Construct IntermediateResults dynamically from a dictionary, ignoring extra keywords."""
+        filtered_data = {k: v for k, v in data.items() if k in cls.model_fields}
+        return cls(**filtered_data)
+
 class MethodDynamicResults(BaseModel):
+    model_config = {"arbitrary_types_allowed": True}
+
     runtimes: List[float] = []
     cdlib_modularity_overlap_trace: List[float] = []
     customize_q0_overlap_trace: List[float] = []
     affected_nodes: List[int] = []
     iterations_per_step: List[int] = []
     num_communities: List[int] = []
+    clusterings: List[NodeClustering] = []
+    nmi_trace: List[float] = []  # NMI with ground truth (if available)
 
     def update_intermediate_results(
         self, intermediate_results: IntermediateResults
     ):
         self.runtimes.append(intermediate_results.runtime)
         self.cdlib_modularity_overlap_trace.append(intermediate_results.cdlib_modularity_overlap)
-        self.customize_q0_overlap_trace.append(intermediate_results.customize_q0_overlap)
+        self.customize_q0_overlap_trace.append(
+            intermediate_results.customize_q0_overlap
+        )
         self.affected_nodes.append(intermediate_results.affected_nodes)
         self.num_communities.append(intermediate_results.num_communities)
 
@@ -84,3 +98,10 @@ class MethodDynamicResults(BaseModel):
         if not self.customize_q0_overlap_trace:
             return 0.0
         return np.mean(self.customize_q0_overlap_trace)
+
+    @property
+    def avg_nmi(self) -> float:
+        """Average NMI with ground truth (if available)."""
+        if not self.nmi_trace:
+            return 0.0
+        return np.mean(self.nmi_trace)

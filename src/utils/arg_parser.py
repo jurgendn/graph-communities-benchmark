@@ -60,4 +60,19 @@ def parse_args():
         default=5,
         help="Number of runs for each algorithm (default: 5)",
     )
+    
+    # LFR Benchmark options
+    parser.add_argument(
+        "--lfr-folder",
+        type=str,
+        default=None,
+        help="Path to folder containing LFR snapshot GraphML files",
+    )
+    parser.add_argument(
+        "--ground-truth-attr",
+        type=str,
+        default="label",
+        help="Node attribute containing ground truth (default: label)",
+    )
+    
     return parser.parse_args()

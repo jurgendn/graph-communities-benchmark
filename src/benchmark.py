@@ -7,7 +7,7 @@ from src import dynamic_methods
 from src.evaluations.target_modularity import overlapping_modularity_q0
 from src.factory.communities import IntermediateResults, MethodDynamicResults
 from src.factory.factory import TemporalGraph
-from src.static_methods.ndocd import NDOCD
+from src.models.static_methods.overlap.ndocd import NDOCD
 
 
 def run_static_benchmark(
@@ -93,7 +93,15 @@ def run_dynamic_benchmark(
         "tiles": {
             "func": dynamic_methods.Tiles(obs=1),
             "params": {},
-        }
+        },
+        "df_louvain": {
+            "func": dynamic_methods.run_df_louvain,
+            "params": {},
+        },
+        "static_louvain": {
+            "func": dynamic_methods.run_static_louvain,
+            "params": {},
+        },
     }
     if algorithm_names is None:
         algorithm_names = ALGORITHMS_OVERLAPPING.keys()
