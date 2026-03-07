@@ -1,233 +1,144 @@
 # Quick Start Guide
 
-This guide helps you get started with running benchmarks using the Graph Communities Benchmark framework.
+This guide covers the fastest path to running benchmarks and generating plots.
 
-## Overview
+## Benchmark Entry Points
 
-The benchmark framework provides two ways to run experiments:
+- `main.py`: unified entry point for static and dynamic algorithms.
+- `main_static.py`: legacy static runner.
+- `main_dynamic.py`: legacy dynamic runner.
+- `scripts/benchmark.sh`: dataset-config-driven wrapper around the entry points.
 
-1. **Configuration-based scripts**: Read from YAML configuration files (recommended)
-2. **Direct command-line**: Pass parameters directly to Python scripts
-3. **Unified entry point**: Use `main.py` for both static and dynamic algorithms
+For new work, use `main.py` unless you specifically need the legacy runners.
 
-## Method 1: Using Configuration-Based Scripts (Recommended)
+## Run A Benchmark With `main.py`
 
-The benchmark provides configuration-based scripts that read from [`config/dataset_config.yaml`](../config/dataset_config.yaml) and [`config/algorithms.yaml`](../config/algorithms.yaml).
+```bash
+python main.py \
+  --dataset-path ./data/CollegeMsg.txt \
+  --dataset CollegeMsg \
+  --source-idx 0 \
+  --target-idx 1 \
+  --batch-range 1e-4 \
+  --initial-fraction 0.4 \
+  --max-steps 10
+```
 
-### List Available Datasets
+What happens:
+
+1. The dataset is converted into a `TemporalGraph`.
+2. Target algorithms are loaded from [`config/algorithms.yaml`](../config/algorithms.yaml).
+3. Each run is evaluated and logged to Comet ML.
+
+## Useful CLI Options
+
+```bash
+python main.py --help
+```
+
+Common options:
+
+| Argument | Description |
+| --- | --- |
+| `--dataset-path` | Input edge-list path |
+| `--dataset` | Dataset label used in logs |
+| `--source-idx` | Source column index |
+| `--target-idx` | Target column index |
+| `--delimiter` | File delimiter |
+| `--batch-range` | Fraction of edges per temporal batch |
+| `--initial-fraction` | Fraction of edges placed in the base graph |
+| `--max-steps` | Maximum number of temporal updates |
+| `--delete-insert-ratio` | Ratio of deletions to insertions for generated updates |
+| `--num-runs` | Number of runs per algorithm |
+| `--lfr-folder` | Folder of `snapshot_t*.graphml` files |
+| `--ground-truth-attr` | Ground-truth node attribute for LFR evaluation |
+
+## Run From Dataset Config
+
+List datasets from [`config/dataset_config.yaml`](../config/dataset_config.yaml):
 
 ```bash
 ./scripts/benchmark.sh --list
 ```
 
-This will display all datasets configured in [`config/dataset_config.yaml`](../config/dataset_config.yaml).
-
-### Run Benchmarks for All Target Datasets
+Run one configured dataset with the unified runner:
 
 ```bash
-# Run with unified entry point (main.py) - recommended
-./scripts/benchmark.sh --all main.py
-
-# Run static benchmarks only
-./scripts/benchmark.sh --all main_static.py
-
-# Run dynamic benchmarks only
-./scripts/benchmark.sh --all main_dynamic.py
-```
-
-### Run Benchmarks for a Specific Dataset
-
-```bash
-# Unified entry point (recommended)
 ./scripts/benchmark.sh college-msg main.py
-
-# Legacy scripts
-./scripts/benchmark.sh college-msg main_static.py
-./scripts/benchmark.sh bio-wormnet-v3 main_static.py
 ```
 
-### Run Benchmarks with Multiple Runs
+Run all configured target datasets:
 
 ```bash
-# Run 5 times for each dataset
-./scripts/benchmark.sh college-msg main.py 5
-
-# Run 3 times for all datasets
-./scripts/benchmark.sh --all main.py 3
+./scripts/benchmark.sh --all main.py
 ```
 
-### Script Options
-
-| Option | Description |
-|--------|-------------|
-| `--all` | Run benchmarks for all target datasets |
-| `--list` | List all available datasets |
-| `<dataset_name>` | Run benchmarks for a specific dataset |
-| `<main_script>` | Entry point script (`main.py`, `main_static.py`, or `main_dynamic.py`) |
-| `<num_runs>` | Number of times to run the benchmark (default: 1) |
-
-## Method 2: Unified Entry Point (main.py)
-
-The recommended way to run benchmarks is using `main.py`, which automatically handles both static and dynamic algorithms:
+Run the same benchmark multiple times:
 
 ```bash
-# Basic usage
-python main.py --dataset CollegeMsg --max-steps 10
+./scripts/benchmark.sh college-msg main.py 3
+```
 
-# With custom parameters
+Notes:
+
+- `benchmark.sh` reads dataset values from [`config/dataset_config.yaml`](../config/dataset_config.yaml).
+- The script only forwards `delete_insert_ratio` automatically for `main_dynamic.py`; if you need a custom value with `main.py`, call `main.py` directly.
+
+## Run On LFR GraphML Snapshots
+
+If you have temporal GraphML snapshots named `snapshot_t0.graphml`, `snapshot_t1.graphml`, and so on:
+
+```bash
 python main.py \
-    --dataset-path ./data/CollegeMsg.txt \
-    --dataset CollegeMsg \
-    --source-idx 0 \
-    --target-idx 1 \
-    --batch-range 1e-4 \
-    --initial-fraction 0.4 \
-    --max-steps 10 \
-    --num-runs 5
+  --lfr-folder ./data/lfr_benchmark/my_lfr \
+  --ground-truth-attr label \
+  --max-steps 10
 ```
 
-The unified entry point:
-1. Loads algorithms from `config/algorithms.yaml`
-2. Runs each algorithm through the pipeline
-3. Evaluates results (crisp or overlapping modularity based on algorithm type)
-4. Logs to Comet ML
+The loader uses the first snapshot as the base graph and derives temporal changes from the remaining snapshots.
 
-## Method 3: Direct Command-Line Execution (Legacy)
+## Generate Plots
 
-### Running Static Benchmarks
-
-Run overlapping community detection algorithms on each temporal snapshot:
+Recommended:
 
 ```bash
-PYTHONPATH=. python main_static.py \
-    --dataset-path ./data/CollegeMsg.txt \
-    --dataset CollegeMsg \
-    --source-idx 0 \
-    --target-idx 1 \
-    --batch-range 1e-4 \
-    --initial-fraction 0.4 \
-    --max-steps 10
-```
-
-### Running LFR Benchmark with Ground Truth
-
-```bash
-# Using LFR folder with ground truth
-python main.py \
-    --lfr-folder ./data/lfr_benchmark \
-    --ground-truth-attr label \
-    --max-steps 10
-```
-
-### Running Dynamic Benchmarks
-
-Run streaming/dynamic community detection algorithms:
-
-```bash
-PYTHONPATH=. python main_dynamic.py \
-    --dataset-path ./data/CollegeMsg.txt \
-    --dataset CollegeMsg \
-    --source-idx 0 \
-    --target-idx 1 \
-    --batch-range 1e-4 \
-    --initial-fraction 0.4 \
-    --max-steps 10
-```
-
-## Command-Line Arguments
-
-| Argument | Type | Default | Description |
-|----------|------|---------|-------------|
-| `--dataset-path` | str | `data/CollegeMsg.txt` | Path to the dataset file |
-| `--dataset` | str | `CollegeMsg` | Name of the dataset (used for tagging) |
-| `--source-idx` | int | `0` | Column index for source node |
-| `--target-idx` | int | `1` | Column index for target node |
-| `--batch-range` | float | `1e-4` | Fraction of edges per temporal batch |
-| `--initial-fraction` | float | `0.4` | Fraction of edges used for base graph |
-| `--max-steps` | int | `10` | Maximum number of temporal snapshots |
-| `--load-full-nodes` | flag | `False` | Pre-load all nodes into the base graph |
-| `--delimiter` | str | `" "` | Delimiter used in the dataset file |
-
-## Example Output
-
-```
-Loaded temporal graph: 11 snapshots
-Base graph: 1893 nodes, 7048 edges
-
-Algorithms:   0%|          | 0/3 [00:00<?, ?it/s]
-coach: 0it [00:00, ?it/s]
-Steps: 0%|          | 0/11 [00:00<?, ?it/s]
-
-coach:
-  steps: 11
-  avg_runtime: 0.2341s
-  avg_modularity: 0.4215
-```
-
-## Generating Visualizations
-
-After running benchmarks, you can generate visualization plots:
-
-```bash
-# Using the plot script (recommended)
 ./scripts/plot.sh
-
-# Or manually
-PYTHONPATH=. python3 tools/fetch_and_merge.py
-PYTHONPATH=. python3 tools/plots.py
 ```
 
-See [Visualization Guide](visualization.md) for more details.
+Manual equivalent:
 
-## Configuration Files
-
-### Algorithms Configuration ([`config/algorithms.yaml`](../config/algorithms.yaml))
-
-This file contains all available algorithms and their parameters. To change which algorithms run, modify the `target_algorithms` list:
-
-```yaml
-target_algorithms:
-  - coach
-  - percomvc
-  - core_expansion
+```bash
+PYTHONPATH=. python tools/fetch_and_merge.py
+PYTHONPATH=. python tools/plots.py
 ```
 
-### Dataset Configuration ([`config/dataset_config.yaml`](../config/dataset_config.yaml))
+The plot pipeline reads [`config/visualization.yaml`](../config/visualization.yaml), fetches Comet runs into `experiments/raw/`, merges them into `experiments/merged/`, and writes figures to `assets/grouped/`.
 
-This file contains all available datasets and their parameters. To change which datasets run, modify the `target_datasets` list:
+## Typical Workflow
 
-```yaml
-target_datasets:
-  - college-msg
-  - bio-wormnet-v3
+```bash
+cp .env.example .env
+python main.py --dataset-path ./data/CollegeMsg.txt --dataset CollegeMsg --max-steps 10
+./scripts/plot.sh
 ```
 
-## Troubleshooting
+## Common Issues
 
-### Dataset Not Found
+### Dataset not found
 
-If you get a "Dataset not found" error:
+- Verify the file exists under `data/`.
+- Verify the path and dataset key in [`config/dataset_config.yaml`](../config/dataset_config.yaml).
 
-1. Check that the dataset file exists in the `data/` directory
-2. Verify the dataset name matches the configuration in [`config/dataset_config.yaml`](../config/dataset_config.yaml)
+### Comet credentials missing
 
-### Algorithm Not Found
+- Add `COMET_API_KEY` and `COMET_WORKSPACE` to `.env`.
 
-If you get an "Algorithm not found" error:
+### `src` import errors in tools
 
-1. Check that the algorithm is defined in [`config/algorithms.yaml`](../config/algorithms.yaml)
-2. Verify the algorithm is in the `target_algorithms` list
-
-### Comet ML Connection Issues
-
-If you encounter Comet ML connection issues:
-
-1. Verify your credentials in `.env` file
-2. Check your internet connection
-3. Ensure your API key is valid
+- Run tools with `PYTHONPATH=.` or use `./scripts/plot.sh`.
 
 ## Next Steps
 
-- See [Development Guide](development_guide.md) for adding new algorithms
-- See [Metrics Documentation](metrics.md) for understanding evaluation metrics
-- See [Visualization Guide](visualization.md) for generating plots
+- See [Configuration Guide](configuration.md) to change target datasets and algorithms.
+- See [Metrics Documentation](metrics.md) for the meaning of the logged values.
+- See [Visualization Guide](visualization.md) for plot details.

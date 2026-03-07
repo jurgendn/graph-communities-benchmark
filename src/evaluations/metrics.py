@@ -12,6 +12,9 @@ from typing import Tuple
 import networkx as nx
 from cdlib import NodeClustering, evaluation
 
+from src.evaluations.onmi_fast import (
+    overlapping_normalized_mutual_information_MGH_fast,
+)
 from src.evaluations.target_modularity import overlapping_modularity_q0
 
 CLUSTERING_TYPES = ("crisp", "overlapping")
@@ -148,7 +151,7 @@ def compute_nmi_from_ground_truth(
     try:
         if is_overlapping:
             # Overlapping NMI
-            result = evaluation.overlapping_normalized_mutual_information_MGH(
+            result = overlapping_normalized_mutual_information_MGH_fast(
                 clustering, gt_clustering
             )
             return result.score if result.score is not None else 0.0
