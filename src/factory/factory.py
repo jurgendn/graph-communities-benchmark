@@ -10,11 +10,12 @@ class TemporalChanges(BaseModel):
 
 
 class TemporalGraph:
-    def __init__(self, base_graph: nx.Graph, steps: List[TemporalChanges]):
+    def __init__(self, base_graph: nx.Graph, steps: List[TemporalChanges], _ground_truth_clusterings: List = None):
         self.base_graph = base_graph
         self.steps = steps
         # cached_snapshots[i] is snapshot at time i
         self.cached_snapshots: List[nx.Graph] = [base_graph.copy()]
+        self._ground_truth_clusterings = _ground_truth_clusterings
 
     def num_steps(self) -> int:
         return len(self.steps)
@@ -58,14 +59,3 @@ class TemporalGraph:
     def average_changes_per_snapshot(self) -> float:
         total_changes = sum(len(step.deletions) + len(step.insertions) for step in self.steps)
         return total_changes / len(self.steps) if self.steps else 0.0
-
-if __name__ == "__main__":
-    graph = nx.karate_club_graph()
-    changes_step1 = TemporalChanges(
-        deletions=[(0, 1), (2, 3)],
-        insertions=[(0, 2), (1, 3)]
-    )
-    changes_step2 = TemporalChanges(deletions=[(4, 5)], insertions=[(5, 6)])
-    temporal_graph = TemporalGraph(base_graph=graph, steps=[changes_step1, changes_step2])
-    for snapshot in temporal_graph.iter_snapshots():
-        print(snapshot)

@@ -1,374 +1,243 @@
 # Configuration Guide
 
-This guide describes the configuration system used in Graph Communities Benchmark framework.
+The repository uses YAML files under `config/` to define algorithms, datasets, and visualization settings.
 
-## Overview
-
-The benchmark uses YAML configuration files for easy customization of algorithms, datasets, and visualization settings. All configuration files are located in the [`config/`](../config/) directory.
-
-## Configuration Files
+## Files
 
 | File | Purpose |
-|-------|---------|
-| [`config/algorithms.yaml`](../config/algorithms.yaml) | Algorithm definitions and parameters |
-| [`config/dataset_config.yaml`](../config/dataset_config.yaml) | Dataset configurations and parameters |
-| [`config/visualization.yaml`](../config/visualization.yaml) | Visualization and plotting settings |
+| --- | --- |
+| [`config/algorithms.yaml`](../config/algorithms.yaml) | Which algorithms run and how they are loaded |
+| [`config/dataset_config.yaml`](../config/dataset_config.yaml) | Named temporal, LFR, and static datasets |
+| [`config/visualization.yaml`](../config/visualization.yaml) | Comet projects, metric keys, and plot styling |
 
-## Algorithm Configuration ([`config/algorithms.yaml`](../config/algorithms.yaml))
+## `config/algorithms.yaml`
+
+This file drives both [`main.py`](../main.py) and [`main_static.py`](../main_static.py) through [`src/algorithms/factory.py`](../src/algorithms/factory.py).
 
 ### Structure
 
 ```yaml
-# Specify which algorithms to run (in order)
-target_algorithms:
+target_snapshot_algorithms:
   - coach
-  - percomvc
   - core_expansion
+  - graph_entropy
 
-# All available algorithms with their configurations
-overlapping_algorithms:
-  algorithm_name:
-    module: "module.path"
-    function: "function_name"
-    params:
-      param1: value1
-      param2: value2
-    metadata: {}
-    description: "Algorithm description"
-```
+target_temporal_algorithms:
+  - tiles
 
-### Fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `target_algorithms` | list | List of algorithm names to run in benchmarks |
-| `overlapping_algorithms` | dict | All available algorithms with their configurations |
-| `module` | str | Python module path (e.g., `cdlib.algorithms` or `src.static_methods.big_clam`) |
-| `function` | str | Function or class name to import |
-| `params` | dict | Algorithm parameters |
-| `metadata` | dict | Additional metadata for the algorithm |
-| `description` | str | Human-readable description |
-
-### Example: Adding a CDlib Algorithm
-
-```yaml
-overlapping_algorithms:
-  angel:
+snapshot_algorithms:
+  coach:
     module: "cdlib.algorithms"
-    function: "angel"
-    params:
-      threshold: 0.25
+    function: "coach"
+    params: {}
+    clustering_type: "overlapping"
     metadata: {}
-    description: "ANGEL: A New Graph-based Entity Linking algorithm"
+    description: "COACH"
 ```
 
-### Example: Adding a Custom Algorithm
+### Important fields
+
+| Field | Meaning |
+| --- | --- |
+| `target_snapshot_algorithms` | Ordered list of per-snapshot algorithms to execute |
+| `target_temporal_algorithms` | Ordered list of full-temporal-graph algorithms to execute |
+| `snapshot_algorithms` | Definitions for snapshot-by-snapshot algorithms |
+| `temporal_algorithms` | Definitions for full-temporal-graph algorithms |
+| `module` | Python import path |
+| `function` | Function or class loaded from that module |
+| `params` | Keyword args passed to the function or constructor |
+| `clustering_type` | `crisp` or `overlapping` |
+| `description` | Human-readable label |
+
+### Behavior
+
+- Snapshot algorithms are wrapped and called once per snapshot; they can be used in both `main.py` and `main_static.py`.
+- Temporal algorithms consume the full `TemporalGraph`; they are only meaningful in `main.py`.
+- The `module` field usually points either to `cdlib.algorithms` or to an implementation under `src/models/`.
+
+### Current defaults
+
+At the moment, the default target lists are:
 
 ```yaml
-overlapping_algorithms:
-  my_algorithm:
-    module: "src.static_methods.my_algorithm"
-    function: "MyAlgorithm"
-    params:
-      param1: 0.5
-      param2: 100
-    metadata:
-      author: "Your Name"
-      year: 2025
-    description: "My Custom Algorithm for community detection"
+target_snapshot_algorithms:
+  - coach
+  - core_expansion
+  - graph_entropy
+
+target_temporal_algorithms:
+  - tiles
 ```
 
-### Available Algorithms
+Change those lists to choose what runs. `main.py` loads both sections; `main_static.py` only executes snapshot algorithms.
 
-The following algorithms are currently configured:
+## `config/dataset_config.yaml`
 
-- **ANGEL**: A fast, local-first overlapping community detection algorithm
-- **DEMON**: Democratic Estimate of the Modular Organization of a Network
-- **COACH**: Core-Attachment based clustering
-- **NDOCD**: Network Decomposition-based Overlapping Community Detection
-- **BigClam**: Overlapping community detection using gradient ascent
-- **CosineOverlap**: Overlapping community detection using cosine similarity
-- **SLPA**: Speaker-Listener Label Propagation Algorithm
-- **Percomvc**: Permanence based Overlapping Community Detection
-- **Core Expansion**: Core Expansion algorithm
-- **Graph Entropy**: Graph Entropy based community detection
-- **UMSTMO**: Universal Multi-Scale Community Detection
-- **DPCLUS**: Density-Periphery based Clustering
-- **IPCA**: Iterative Principal Component Analysis
-- **LAIS2**: Label Propagation with Improved Seed Selection
-- **Walkscan**: Walk-based SCAN algorithm
-- **DCS**: Distributed Community Search
-- **LFM**: Lancichinetti-Fortunato-Radicchi benchmark
-- **EBGC**: Entropy-based Graph Clustering
-
-## Dataset Configuration ([`config/dataset_config.yaml`](../config/dataset_config.yaml))
+This file is consumed by `scripts/benchmark.sh`, `scripts/benchmark_static.sh`, and `main_static.py --config`.
 
 ### Structure
 
 ```yaml
-# Datasets to run benchmarks on
 target_datasets:
   - college-msg
-  - bio-wormnet-v3
 
-# Common settings shared across datasets
+target_static_datasets:
+  - karate
+
 common: &common_settings
   max_steps: 9
   initial_fraction: 0.4
   batch_range: 0.00001
 
-# All available datasets with their configurations
 datasets:
-  dataset_name:
-    path: ./data/dataset.txt
-    dataset_name: DatasetName
+  college-msg:
+    path: ./data/CollegeMsg.txt
+    dataset_name: CollegeMsg
     source_idx: 0
     target_idx: 1
     delimiter: " "
     <<: *common_settings
-```
 
-### Fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `target_datasets` | list | List of dataset names to benchmark |
-| `datasets` | dict | All available datasets with their configurations |
-| `path` | str | Path to dataset file |
-| `dataset_name` | str | Dataset name for tagging |
-| `source_idx` | int | Column index for source node |
-| `target_idx` | int | Column index for target node |
-| `delimiter` | str | Field delimiter (e.g., `" "`, `","`, `"\t"`) |
-| `max_steps` | int | Maximum number of temporal snapshots |
-| `initial_fraction` | float | Fraction of edges for base graph |
-| `batch_range` | float | Fraction of edges per batch |
-
-### Common Settings
-
-The `common` section defines settings that are shared across multiple datasets using YAML anchors:
-
-```yaml
-common: &common_settings
-  max_steps: 9
-  initial_fraction: 0.4
-  batch_range: 0.00001
-
-datasets:
-  dataset1:
-    <<: *common_settings  # Inherits all common settings
-    path: ./data/dataset1.txt
-    # ... other dataset-specific settings ...
-```
-
-### Example: Adding a New Dataset
-
-```yaml
-datasets:
-  my_dataset:
-    path: ./data/my_dataset.txt
-    dataset_name: MyDataset
+static_graphs:
+  karate:
+    path: data/karate.txt
+    dataset_name: karate
     source_idx: 0
     target_idx: 1
-    delimiter: ","
-    max_steps: 10
-    initial_fraction: 0.3
-    batch_range: 0.0001
+    delimiter: " "
 ```
 
-### Dataset Categories
+### Important fields
 
-Batch ranges can be categorized by size:
+| Field | Meaning |
+| --- | --- |
+| `target_datasets` | Datasets shown by `./scripts/benchmark.sh --list` and used by `--all` |
+| `target_static_datasets` | Datasets shown by `./scripts/benchmark_static.sh --list` and used by static `--all` |
+| `path` | Local dataset file path |
+| `dataset_name` | Label sent to logs and CLI output |
+| `type` | `edge_list` or `lfr` for temporal config entries |
+| `source_idx` | Source column index |
+| `target_idx` | Target column index |
+| `delimiter` | Field separator |
+| `max_steps` | Maximum number of temporal updates |
+| `initial_fraction` | Fraction of rows used to form the base graph |
+| `batch_range` | Fraction of total edges assigned to each temporal batch |
+| `ground_truth_attr` | Node attribute used to build ground truth when available |
 
-| Category | Batch Range | Description |
-|----------|-------------|-------------|
-| Large | 0.001 | Large batches, fewer snapshots |
-| Medium | 0.0001 | Medium batches |
-| Small | 0.00001 | Small batches, more snapshots |
+### Dataset sections
 
-## Visualization Configuration ([`config/visualization.yaml`](../config/visualization.yaml))
+- `datasets`: temporal edge-list and LFR benchmarks used by `main.py`
+- `static_graphs`: static graph inputs used by `main_static.py`
 
-### Structure
+### Temporal dataset types
+
+Temporal entries use an explicit `type` field:
+
+- `edge_list`: one file converted into a temporal graph through batching
+- `lfr`: folder of `snapshot_t*.gml` files diffed into temporal steps
+
+Example:
 
 ```yaml
-# Directory paths
-raw_dir: "experiments/raw"
-merge_dir: "experiments/merged"
-output_dir: "assets"
+datasets:
+  synthetic-n-5000-1:
+    dataset_name: synthetic_n_5000_1
+    path: data/synthetic_n_5000_1/
+    type: "lfr"
+    ground_truth_attr: "communities"
+    source_idx: 0
+    target_idx: 1
+    delimiter: " "
+```
 
-# Comet ML workspace
-workspace: "your_workspace"
+### Static graph entries
 
-# Hyperparameters to track
-hyperparameters:
-  - batch-range
+Static entries do not need a `type` because they are always loaded through `main_static.py` as one-snapshot temporal graphs.
 
-# Metrics to visualize
+Example:
+
+```yaml
+static_graphs:
+  karate:
+    dataset_name: karate
+    path: data/karate.txt
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+```
+
+### Notes
+
+- `scripts/benchmark.sh` reads `datasets` through `scripts/parse_config.py`.
+- `scripts/benchmark_static.sh` reads `static_graphs` directly from YAML.
+- Values in `common` are reused through YAML anchors.
+- Paths under `data/` refer to local files; the repository does not track the data directory.
+
+## `config/visualization.yaml`
+
+This file controls the Comet fetch/merge/plot pipeline.
+
+### Top-level keys used in code
+
+| Key | Used for |
+| --- | --- |
+| `raw_dir` | Raw Comet export location |
+| `merge_dir` | Merged metric location |
+| `output_dir` | Plot output location |
+| `workspace` | Default Comet workspace |
+| `hyperparameters` | Hyperparameter keys to inspect during merging |
+| `metric_keys` | Metrics fetched from Comet |
+| `projects` | Comet project names to fetch |
+| `plotter` | Dataset grouping and algorithm styling |
+
+### Metric keys
+
+The current visualization pipeline expects metric names such as:
+
+```yaml
 metric_keys:
-  - "cdlib_modularity"
-  - "customize_q0_modularity"
-  - "num_communities"
-  - "runtime"
-
-# Comet ML projects
-projects:
-  - project-name-1
-  - project-name-2
-
-# Plotter settings
-plotter:
-  # Batch range categories
-  batch_range_categories:
-    large: 0.001
-    medium: 0.0001
-    small: 0.00001
-  
-  # Dataset categories
-  synthetic_datasets:
-    - project-lfr-large
-    - project-lfr-small
-  
-  real_world_datasets:
-    - project-collegemsg
-    - project-bio-wormnet
-  
-  # Project name mapping
-  projects_name_mapping:
-    project-collegemsg: "CollegeMsg"
-    project-bio-wormnet: "Bio-WormNet"
-  
-  # Selected algorithms
-  selected_algorithms:
-    - coach
-    - tiles
-    - core_expansion
-  
-  # Algorithm display names
-  methods_name:
-    coach: CoAcH
-    tiles: Tiles
-    core_expansion: Core Expansion
-  
-  # Algorithm colors
-  colors:
-    coach: "#1B4F72"
-    tiles: "#17A2B8"
-    core_expansion: "#E09F3E"
-  
-  # Plot order
-  orders:
-    - tiles
+  - cdlib_modularity
+  - customize_q0_modularity
+  - num_communities
+  - runtime
 ```
 
-### Fields
+### Plotter config
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `raw_dir` | str | Directory for raw experiment data |
-| `merge_dir` | str | Directory for merged experiment data |
-| `output_dir` | str | Directory for generated plots |
-| `workspace` | str | Comet ML workspace name |
-| `hyperparameters` | list | Hyperparameters to track |
-| `metric_keys` | list | Metrics to visualize |
-| `projects` | list | Comet ML projects to fetch |
-| `plotter` | dict | Visualization settings |
+The `plotter.common_plotter_settings` section defines:
 
-### Plotter Settings
+- batch-range categories
+- dataset groups
+- display-name mappings
+- selected algorithms
+- colors
+- markers
+- plotting order
 
-| Sub-field | Type | Description |
-|-----------|------|-------------|
-| `batch_range_categories` | dict | Batch range size categories |
-| `synthetic_datasets` | list | Synthetic dataset project names |
-| `real_world_datasets` | list | Real-world dataset project names |
-| `projects_name_mapping` | dict | Project name to display name mapping |
-| `selected_algorithms` | list | Algorithms to include in plots |
-| `methods_name` | dict | Algorithm name to display name mapping |
-| `colors` | dict | Algorithm colors (hex codes) |
-| `orders` | list | Plot order for algorithms |
+Those values are read by the visualization helpers in [`src/visualization/config.py`](../src/visualization/config.py) and [`src/visualization/utils.py`](../src/visualization/utils.py).
 
-### Color Palette
+## Validation Tips
 
-The following colors are used for algorithms:
-
-| Algorithm | Color | Hex |
-|------------|--------|-----|
-| CoAcH | Steel Blue | `#1B4F72` |
-| Core Expansion | Muted Gold | `#E09F3E` |
-| Graph Entropy | Sea Green | `#2E8B57` |
-| SLPA | Purple | `#8E44AD` |
-| UMSTMO | Brick Red | `#C0392B` |
-| RWGP-DFL-Overlap | Vibrant Red | `#E74C3C` |
-| Tiles | Vibrant Cyan | `#17A2B8` |
-
-## Best Practices
-
-### 1. Version Control
-
-Keep configuration files under version control to ensure reproducibility:
+Check YAML syntax before running long jobs:
 
 ```bash
-git add config/
-git commit -m "Update algorithm configuration"
+python -c "import yaml; yaml.safe_load(open('config/algorithms.yaml')); yaml.safe_load(open('config/dataset_config.yaml')); yaml.safe_load(open('config/visualization.yaml')); print('ok')"
 ```
 
-### 2. Environment-Specific Settings
+## Common Changes
 
-Use environment variables for sensitive information:
+### Run fewer algorithms
 
-```bash
-# .env
-COMET_API_KEY=your_api_key
-COMET_WORKSPACE=your_workspace
-```
+Edit `target_snapshot_algorithms` and `target_temporal_algorithms` in [`config/algorithms.yaml`](../config/algorithms.yaml).
 
-### 3. Documentation
+### Run different datasets with the shell wrapper
 
-Add comments to configuration files for clarity:
+Edit `target_datasets` in [`config/dataset_config.yaml`](../config/dataset_config.yaml).
 
-```yaml
-# This algorithm performs best on small graphs
-small_graph_algorithm:
-  module: "cdlib.algorithms"
-  function: "small_graph_algo"
-  params:
-    threshold: 0.25  # Lower threshold for small graphs
-```
+### Run different static datasets with the static shell wrapper
 
-### 4. Validation
+Edit `target_static_datasets` in [`config/dataset_config.yaml`](../config/dataset_config.yaml).
 
-Validate configuration files before running benchmarks:
+### Plot different algorithms or projects
 
-```bash
-# Check YAML syntax
-python -c "import yaml; yaml.safe_load(open('config/algorithms.yaml'))"
-```
-
-## Troubleshooting
-
-### YAML Syntax Errors
-
-If you encounter YAML syntax errors:
-
-1. Check indentation (YAML uses spaces, not tabs)
-2. Verify quote matching
-3. Check for trailing commas (not allowed in YAML)
-
-### Algorithm Not Found
-
-If you get "Algorithm not found" error:
-
-1. Verify algorithm is in `overlapping_algorithms` dict
-2. Check that `module` and `function` paths are correct
-3. Ensure algorithm is in `target_algorithms` list
-
-### Dataset Not Found
-
-If you get "Dataset not found" error:
-
-1. Verify dataset is in `datasets` dict
-2. Check that `path` points to existing file
-3. Ensure dataset is in `target_datasets` list
-
-## References
-
-- YAML Specification: https://yaml.org/spec/
-- PyYAML Documentation: https://pyyaml.org/wiki/PyYAMLDocumentation
+Edit `projects`, `selected_algorithms`, `methods_name`, and `colors` in [`config/visualization.yaml`](../config/visualization.yaml).

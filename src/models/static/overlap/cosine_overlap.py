@@ -1,13 +1,18 @@
 """CosineOverlap: Overlapping community detection using cosine similarity."""
 
+from typing import List
+
 import networkx as nx
 import networkx.algorithms.community as nxcom
 import numpy as np
 from cdlib import NodeClustering
 from numpy import linalg as LA
 
+from src.algorithms.base import CommunityDetectionAlgorithm
+from src.factory.factory import TemporalGraph
 
-class CosineOverlap:
+
+class CosineOverlap(CommunityDetectionAlgorithm):
     """
     Detect overlapping communities using cosine similarity in embedding space.
     
@@ -139,32 +144,39 @@ class CosineOverlap:
         
         return overlapping_communities
     
-    def __call__(self, G: nx.Graph) -> NodeClustering:
+    def _process_snapshot(self, G: nx.Graph) -> NodeClustering:
         """
         Detect communities and return as NodeClustering object.
-        
+
         Args:
             G: NetworkX graph
-            
+
         Returns:
             NodeClustering object with detected communities
         """
         communities = self.fit_predict(G)
         return NodeClustering(communities=communities, graph=G)
 
+    def __call__(self, tg: TemporalGraph) -> List[NodeClustering]:
+        """Run CosineOverlap on each snapshot of the temporal graph."""
+        results = []
+        for snapshot in tg.iter_snapshots():
+            results.append(self._process_snapshot(snapshot))
+        return results
+
 
 def cosine_overlap(G: nx.Graph, theta: float = 0.85, walk_power: int = 3, seed: int = 123) -> NodeClustering:
     """
-    Convenience function for CosineOverlap community detection.
-    
+    Convenience function for CosineOverlap community detection on a single graph.
+
     Args:
         G: NetworkX graph
         theta: Cosine similarity threshold (default 0.85)
         walk_power: Power to raise the transition matrix (default 3)
         seed: Random seed for Louvain (default 123)
-        
+
     Returns:
         NodeClustering object with detected communities
     """
     model = CosineOverlap(theta=theta, walk_power=walk_power, seed=seed)
-    return model(G)
+    return model._process_snapshot(G)

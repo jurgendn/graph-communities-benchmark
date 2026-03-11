@@ -11,6 +11,7 @@ metric_keys:
   - "num_communities"
   - "runtime"
 projects:
+  - graph-community-detection-overlapping-email-enron-large
   - graph-community-detection-overlapping-collegemsg
   - graph-community-detection-overlapping-ia-frwikinews-user-edits
   - graph-community-detection-overlapping-soc-sign-bitcoin-otc
@@ -23,10 +24,10 @@ projects:
   - graph-community-detection-overlapping-lfr-small-community-size
   - graph-community-detection-overlapping-ca-hepph
   - graph-community-detection-overlapping-ca-astroph
-  - graph-community-detection-overlapping-scc-infect-dublin
-  - graph-community-detection-overlapping-scc-infect-hyper
-  - graph-community-detection-overlapping-scc-twitter-copen
-  - graph-community-detection-overlapping-scc-retweet
+  # - graph-community-detection-overlapping-scc-infect-dublin
+  # - graph-community-detection-overlapping-scc-infect-hyper
+  # - graph-community-detection-overlapping-scc-twitter-copen
+  # - graph-community-detection-overlapping-scc-retweet
   # - graph-community-detection-overlapping-sx-askubuntu
 
 plotter:
@@ -49,6 +50,7 @@ plotter:
       - graph-community-detection-overlapping-soc-sign-bitcoin-alpha
       - graph-community-detection-overlapping-soc-sign-bitcoin-otc
       # - graph-community-detection-overlapping-sx-askubuntu
+      - graph-community-detection-overlapping-email-enron-large
       - graph-community-detection-overlapping-scc-infect-dublin
       - graph-community-detection-overlapping-scc-infect-hyper
       - graph-community-detection-overlapping-scc-twitter-copen
@@ -72,6 +74,7 @@ plotter:
       graph-community-detection-overlapping-scc-infect-hyper: "SCC-Infect-Hyper"
       graph-community-detection-overlapping-scc-twitter-copen: "SCC-Twitter-Copen"
       graph-community-detection-overlapping-scc-retweet: "SCC-Retweet"
+      graph-community-detection-overlapping-email-enron-large: "Email-Enron-Large"
     selected_algorithms:
       - coach
       - tiles

@@ -2,8 +2,11 @@ from typing import Any, List, Optional, Set
 from cdlib import NodeClustering
 import networkx as nx
 
+from src.algorithms.base import CommunityDetectionAlgorithm
+from src.factory.factory import TemporalGraph
 
-class NDOCD:
+
+class NDOCD(CommunityDetectionAlgorithm):
     """
     Implementation of Overlapping Community Detection based on Network Decomposition (NDOCD).
     Ref: Ding et al. (2016)
@@ -173,5 +176,13 @@ class NDOCD:
         return node_clustering
 
 
-    def __call__(self, G: nx.Graph) -> NodeClustering:
+    def _process_snapshot(self, G: nx.Graph) -> NodeClustering:
+        """Run NDOCD on a single graph snapshot."""
         return self.execute(G)
+
+    def __call__(self, tg: TemporalGraph) -> List[NodeClustering]:
+        """Run NDOCD on each snapshot of the temporal graph."""
+        results = []
+        for snapshot in tg.iter_snapshots():
+            results.append(self._process_snapshot(snapshot))
+        return results

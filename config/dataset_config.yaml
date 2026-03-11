@@ -5,15 +5,15 @@
 # Each dataset entry contains the parameters required for benchmarking
 
 target_datasets:
-  # - college-msg
+  - college-msg
   - soc-sign-bitcoinotc
-  # - soc-sign-bitcoinalpha
-  # - ca-condmat
-  # - ca-hepph
-  # - ca-astroph
-  # - scc-infect-dublin
-  # - ia-frwikinews-user-edits
-  # - edit-enwikibooks
+  - soc-sign-bitcoinalpha
+  - ca-condmat
+  - ca-hepph
+  - ca-astroph
+  - email-enron-large
+  - ia-frwikinews-user-edits
+  - edit-enwikibooks
   - bio-wormnet-v3
   # # End of target datasets, additional datasets can be added below for further analysis
   # - lfr-large-community-size
@@ -31,6 +31,14 @@ common: &common_settings
   batch_range: 0.00001 # Small
 
 datasets:
+  email-enron-large:
+    path: ./data/email-enron-large.txt
+    dataset_name: email-Enron-large
+    source_idx: 0
+    target_idx: 1
+    delimiter: " "
+    <<: *common_settings
+  
   bio-wormnet-v3:
     path: ./data/bio-WormNet-v3.txt
     dataset_name: bio-WormNet-v3

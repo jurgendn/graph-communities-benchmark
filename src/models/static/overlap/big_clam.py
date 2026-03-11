@@ -1,13 +1,17 @@
 """BigClam: Overlapping community detection algorithm."""
 
 import math
+from typing import List
 
 import networkx as nx
 import numpy as np
 from cdlib import NodeClustering
 
+from src.algorithms.base import CommunityDetectionAlgorithm
+from src.factory.factory import TemporalGraph
 
-class BigClam:
+
+class BigClam(CommunityDetectionAlgorithm):
     """Detect overlapping communities using gradient ascent on affiliation matrix."""
 
     def __init__(
@@ -72,12 +76,20 @@ class BigClam:
         """Fit and return communities in one step."""
         return self.fit(G).get_communities(G)
 
-    def __call__(self, G: nx.Graph) -> NodeClustering:
+    def _process_snapshot(self, G: nx.Graph) -> NodeClustering:
+        """Run BigClam on a single graph snapshot."""
         communities = self.fit_predict(G)
         return NodeClustering(communities=communities, graph=G)
 
+    def __call__(self, tg: TemporalGraph) -> List[NodeClustering]:
+        """Run BigClam on each snapshot of the temporal graph."""
+        results = []
+        for snapshot in tg.iter_snapshots():
+            results.append(self._process_snapshot(snapshot))
+        return results
+
 
 def big_clam(G: nx.Graph, num_communities: int = 10, iterations: int = 100, learning_rate: float = 0.005) -> NodeClustering:
-    """Convenience function for BigClam."""
+    """Convenience function for BigClam on a single graph."""
     model = BigClam(num_communities=num_communities, iterations=iterations, learning_rate=learning_rate)
-    return model(G)
+    return model._process_snapshot(G)

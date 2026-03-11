@@ -1,189 +1,176 @@
 # Quick Start Guide
 
-This guide helps you get started with running benchmarks using the Graph Communities Benchmark framework.
+This guide covers the fastest path to running benchmarks and generating plots.
 
-## Overview
+## Benchmark Entry Points
 
-The benchmark framework provides two ways to run experiments:
+- `main.py`: temporal edge-list and LFR `.gml` entry point.
+- `main_static.py`: static graph entry point.
+- `scripts/benchmark.sh`: dataset-config-driven wrapper around the entry points.
+- `scripts/benchmark_static.sh`: dataset-config-driven wrapper for static graphs.
 
-1. **Configuration-based scripts**: Read from YAML configuration files (recommended)
-2. **Direct command-line**: Pass parameters directly to Python scripts
+Use `main.py` for temporal/LFR runs and `main_static.py` for static runs.
 
-## Method 1: Using Configuration-Based Scripts (Recommended)
+## Run A Benchmark With `main.py`
 
-The benchmark provides configuration-based scripts that read from [`config/dataset_config.yaml`](../config/dataset_config.yaml) and [`config/algorithms.yaml`](../config/algorithms.yaml).
+```bash
+python main.py \
+  --dataset-path ./data/CollegeMsg.txt \
+  --dataset CollegeMsg \
+  --source-idx 0 \
+  --target-idx 1 \
+  --batch-range 1e-4 \
+  --initial-fraction 0.4 \
+  --max-steps 10
+```
 
-### List Available Datasets
+What happens:
+
+1. The dataset is converted into a `TemporalGraph`.
+2. Snapshot and temporal target algorithms are loaded from [`config/algorithms.yaml`](../config/algorithms.yaml).
+3. Each run is evaluated and logged to Comet ML.
+
+## Useful CLI Options
+
+```bash
+python main.py --help
+```
+
+Common options:
+
+| Argument | Description |
+| --- | --- |
+| `--dataset-path` | Input edge-list path |
+| `--dataset` | Dataset label used in logs |
+| `--source-idx` | Source column index |
+| `--target-idx` | Target column index |
+| `--delimiter` | File delimiter |
+| `--batch-range` | Fraction of edges per temporal batch |
+| `--initial-fraction` | Fraction of edges placed in the base graph |
+| `--max-steps` | Maximum number of temporal updates |
+| `--delete-insert-ratio` | Ratio of deletions to insertions for generated updates |
+| `--num-runs` | Number of runs per algorithm |
+| `--lfr-folder` | Folder of `snapshot_t*.gml` files |
+| `--ground-truth-attr` | Ground-truth node attribute for LFR evaluation |
+
+## Run From Dataset Config
+
+List datasets from [`config/dataset_config.yaml`](../config/dataset_config.yaml):
 
 ```bash
 ./scripts/benchmark.sh --list
 ```
 
-This will display all datasets configured in [`config/dataset_config.yaml`](../config/dataset_config.yaml).
-
-### Run Benchmarks for All Target Datasets
+Run one configured dataset with the unified runner:
 
 ```bash
-# Run static benchmarks
-./scripts/benchmark.sh --all main_static.py
-
-# Run dynamic benchmarks
-./scripts/benchmark.sh --all main_dynamic.py
+./scripts/benchmark.sh college-msg main.py
 ```
 
-### Run Benchmarks for a Specific Dataset
+Run all configured target datasets:
 
 ```bash
-./scripts/benchmark.sh college-msg main_static.py
-./scripts/benchmark.sh bio-wormnet-v3 main_static.py
+./scripts/benchmark.sh --all main.py
 ```
 
-### Run Benchmarks with Multiple Runs
+Run the same benchmark multiple times:
 
 ```bash
-# Run 5 times for each dataset
-./scripts/benchmark.sh college-msg main_static.py 5
-
-# Run 3 times for all datasets
-./scripts/benchmark.sh --all main_static.py 3
+./scripts/benchmark.sh college-msg main.py 3
 ```
 
-### Script Options
+Notes:
 
-| Option | Description |
-|--------|-------------|
-| `--all` | Run benchmarks for all target datasets |
-| `--list` | List all available datasets |
-| `<dataset_name>` | Run benchmarks for a specific dataset |
-| `<main_script>` | Entry point script (`main_static.py` or `main_dynamic.py`) |
-| `<num_runs>` | Number of times to run the benchmark (default: 1) |
+- `benchmark.sh` reads dataset values from [`config/dataset_config.yaml`](../config/dataset_config.yaml).
+- If you need a custom `delete_insert_ratio`, call `main.py` directly.
 
-## Method 2: Direct Command-Line Execution
+## Run A Static Benchmark
 
-### Running Static Benchmarks
-
-Run overlapping community detection algorithms on each temporal snapshot:
+Run a static graph directly from a file:
 
 ```bash
-PYTHONPATH=. python main_static.py \
-    --dataset-path ./data/CollegeMsg.txt \
-    --dataset CollegeMsg \
-    --source-idx 0 \
-    --target-idx 1 \
-    --batch-range 1e-4 \
-    --initial-fraction 0.4 \
-    --max-steps 10
+python main_static.py \
+  --dataset-path ./data/karate.txt \
+  --dataset karate \
+  --source-idx 0 \
+  --target-idx 1
 ```
 
-### Running Dynamic Benchmarks
-
-Run streaming/dynamic community detection algorithms:
+Run a configured static dataset:
 
 ```bash
-PYTHONPATH=. python main_dynamic.py \
-    --dataset-path ./data/CollegeMsg.txt \
-    --dataset CollegeMsg \
-    --source-idx 0 \
-    --target-idx 1 \
-    --batch-range 1e-4 \
-    --initial-fraction 0.4 \
-    --max-steps 10
+./scripts/benchmark_static.sh --list
+./scripts/benchmark_static.sh karate 1
 ```
 
-## Command-Line Arguments
-
-| Argument | Type | Default | Description |
-|----------|------|---------|-------------|
-| `--dataset-path` | str | `data/CollegeMsg.txt` | Path to the dataset file |
-| `--dataset` | str | `CollegeMsg` | Name of the dataset (used for tagging) |
-| `--source-idx` | int | `0` | Column index for source node |
-| `--target-idx` | int | `1` | Column index for target node |
-| `--batch-range` | float | `1e-4` | Fraction of edges per temporal batch |
-| `--initial-fraction` | float | `0.4` | Fraction of edges used for base graph |
-| `--max-steps` | int | `10` | Maximum number of temporal snapshots |
-| `--load-full-nodes` | flag | `False` | Pre-load all nodes into the base graph |
-| `--delimiter` | str | `" "` | Delimiter used in the dataset file |
-
-## Example Output
-
-```
-Loaded temporal graph: 11 snapshots
-Base graph: 1893 nodes, 7048 edges
-
-Algorithms:   0%|          | 0/3 [00:00<?, ?it/s]
-coach: 0it [00:00, ?it/s]
-Steps: 0%|          | 0/11 [00:00<?, ?it/s]
-
-coach:
-  steps: 11
-  avg_runtime: 0.2341s
-  avg_modularity: 0.4215
-```
-
-## Generating Visualizations
-
-After running benchmarks, you can generate visualization plots:
+Run a built-in graph with ground truth:
 
 ```bash
-# Using the plot script (recommended)
+python main_static.py --builtin karate --num-runs 1
+```
+
+Notes:
+
+- Static graphs are loaded as `TemporalGraph(base_graph=G, steps=[])`.
+- `main_static.py` automatically skips temporal algorithms such as `tiles`.
+- `--preload-fraction` benchmarks a partial static graph without creating temporal steps.
+
+## Run On LFR `.gml` Snapshots
+
+If you have temporal snapshots named `snapshot_t0.gml`, `snapshot_t1.gml`, and so on:
+
+```bash
+python main.py \
+  --lfr-folder ./data/synthetic_n_5000_1 \
+  --ground-truth-attr communities \
+  --max-steps 10
+```
+
+The loader uses the first snapshot as the base graph, derives temporal changes from later snapshots, and precomputes ground-truth clusterings.
+
+## Generate Plots
+
+Recommended:
+
+```bash
 ./scripts/plot.sh
-
-# Or manually
-PYTHONPATH=. python3 tools/fetch_and_merge.py
-PYTHONPATH=. python3 tools/plots.py
 ```
 
-See [Visualization Guide](visualization.md) for more details.
+Manual equivalent:
 
-## Configuration Files
-
-### Algorithms Configuration ([`config/algorithms.yaml`](../config/algorithms.yaml))
-
-This file contains all available algorithms and their parameters. To change which algorithms run, modify the `target_algorithms` list:
-
-```yaml
-target_algorithms:
-  - coach
-  - percomvc
-  - core_expansion
+```bash
+PYTHONPATH=. python tools/fetch_and_merge.py
+PYTHONPATH=. python tools/plots.py
 ```
 
-### Dataset Configuration ([`config/dataset_config.yaml`](../config/dataset_config.yaml))
+The plot pipeline reads [`config/visualization.yaml`](../config/visualization.yaml), fetches Comet runs into `experiments/raw/`, merges them into `experiments/merged/`, and writes figures to `assets/grouped/`.
 
-This file contains all available datasets and their parameters. To change which datasets run, modify the `target_datasets` list:
+## Typical Workflow
 
-```yaml
-target_datasets:
-  - college-msg
-  - bio-wormnet-v3
+```bash
+cp .env.example .env
+python main.py --dataset-path ./data/CollegeMsg.txt --dataset CollegeMsg --max-steps 10
+python main_static.py --builtin karate --num-runs 1
+./scripts/plot.sh
 ```
 
-## Troubleshooting
+## Common Issues
 
-### Dataset Not Found
+### Dataset not found
 
-If you get a "Dataset not found" error:
+- Verify the file exists under `data/`.
+- Verify the path and dataset key in [`config/dataset_config.yaml`](../config/dataset_config.yaml).
 
-1. Check that the dataset file exists in the `data/` directory
-2. Verify the dataset name matches the configuration in [`config/dataset_config.yaml`](../config/dataset_config.yaml)
+### Comet credentials missing
 
-### Algorithm Not Found
+- Add `COMET_API_KEY` and `COMET_WORKSPACE` to `.env`.
 
-If you get an "Algorithm not found" error:
+### `src` import errors in tools
 
-1. Check that the algorithm is defined in [`config/algorithms.yaml`](../config/algorithms.yaml)
-2. Verify the algorithm is in the `target_algorithms` list
-
-### Comet ML Connection Issues
-
-If you encounter Comet ML connection issues:
-
-1. Verify your credentials in `.env` file
-2. Check your internet connection
-3. Ensure your API key is valid
+- Run tools with `PYTHONPATH=.` or use `./scripts/plot.sh`.
 
 ## Next Steps
 
-- See [Development Guide](development_guide.md) for adding new algorithms
-- See [Metrics Documentation](metrics.md) for understanding evaluation metrics
-- See [Visualization Guide](visualization.md) for generating plots
+- See [Configuration Guide](configuration.md) to change target datasets and algorithms.
+- See [Metrics Documentation](metrics.md) for the meaning of the logged values.
+- See [Visualization Guide](visualization.md) for plot details.
