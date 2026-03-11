@@ -29,7 +29,7 @@ print_help() {
 	echo "  ./scripts/benchmark_static.sh --list"
 	echo ""
 	echo "Options:"
-	echo "  --all          Run all target_static_datasets from config"
+	echo "  --all          Run all target_datasets from static config"
 	echo "  --list         List available static datasets"
 	echo "  --builtin NAME Load a built-in NetworkX graph"
 	echo "  --help         Show this help"
@@ -92,12 +92,12 @@ run_all_benchmarks() {
 	echo "[$(date +%H:%M:%S)]"
 	echo ""
 
-	# Extract target_static_datasets from config
+	# Extract target_datasets from config
 	local datasets=$(python3 -c "
 import yaml
-with open('config/dataset_config.yaml') as f:
+with open('config/static_dataset_config.yaml') as f:
     cfg = yaml.safe_load(f)
-targets = cfg.get('target_static_datasets', list(cfg.get('static_graphs', {}).keys()))
+targets = cfg.get('target_datasets', list(cfg.get('datasets', {}).keys()))
 print('\n'.join(targets))
 ")
 

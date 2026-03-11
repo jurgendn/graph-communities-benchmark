@@ -1,0 +1,217 @@
+# Static Graph Benchmarking Configuration
+# Each dataset entry contains the parameters required for single-snapshot benchmarking.
+
+target_datasets:
+  - college-msg
+  - soc-sign-bitcoinalpha
+  - soc-sign-bitcoinotc
+  - ca-astroph
+  - ca-condmat
+  - ca-hepph
+  - email-enron-large
+  - edit-enwikibooks
+  - ia-frwikinews-user-edits
+  - bio-wormnet-v3
+  - scc-infect-dublin
+  # - ia-contacts-dublin
+  # - ia-digg-reply
+  # - scc-infect-hyper
+  # - scc-retweet
+  # - scc-tweeter-copen
+  - sx-askubuntu
+  # - sx-mathoverflow
+  # - lfr-large-community-size
+  # - lfr-small-community-size
+  # - synthetic-n-5000-1
+
+
+common: &common_settings
+  preload_fraction: 0.5
+
+datasets:
+  email-enron-large:
+    <<: *common_settings
+    dataset_name: "email-Enron-large"
+    delimiter: " "
+    path: "./data/email-enron-large.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  bio-wormnet-v3:
+    <<: *common_settings
+    dataset_name: "bio-WormNet-v3"
+    delimiter: " "
+    path: "./data/bio-WormNet-v3.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  ca-astroph:
+    <<: *common_settings
+    dataset_name: "ca-AstroPh"
+    path: "./data/ca-AstroPh.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  ca-condmat:
+    <<: *common_settings
+    dataset_name: "ca-CondMat"
+    path: "./data/ca-CondMat.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  ca-hepph:
+    <<: *common_settings
+    dataset_name: "ca-HepPh"
+    path: "./data/ca-HepPh.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  college-msg:
+    <<: *common_settings
+    dataset_name: "CollegeMsg"
+    delimiter: " "
+    path: "./data/CollegeMsg.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  edit-enwikibooks:
+    <<: *common_settings
+    dataset_name: "edit-enwikibooks"
+    delimiter: " "
+    path: "./data/edit-enwikibooks.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  ia-contacts-dublin:
+    <<: *common_settings
+    dataset_name: "ia-contacts-dublin"
+    delimiter: ","
+    path: "./data/ia-contacts_dublin.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  ia-digg-reply:
+    <<: *common_settings
+    dataset_name: "ia-digg-reply"
+    delimiter: " "
+    path: "./data/ia-digg-reply.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  ia-frwikinews-user-edits:
+    <<: *common_settings
+    dataset_name: "ia-frwikinews-user-edits"
+    delimiter: " "
+    path: "./data/ia-frwikinews-user-edits.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  lfr-large-community-size:
+    <<: *common_settings
+    dataset_name: "lfr_large_community_size"
+    delimiter: " "
+    path: "data/lfr_large_community_size.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  lfr-small-community-size:
+    <<: *common_settings
+    dataset_name: "lfr_small_community_size"
+    delimiter: " "
+    path: "data/lfr_small_community_size.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  scc-infect-dublin:
+    <<: *common_settings
+    dataset_name: "scc_infect_dublin"
+    delimiter: " "
+    path: "data/scc_infect-dublin.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  scc-infect-hyper:
+    <<: *common_settings
+    dataset_name: "scc_infect_hyper"
+    delimiter: " "
+    path: "data/scc_infect-hyper.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  scc-retweet:
+    <<: *common_settings
+    dataset_name: "scc_retweet"
+    delimiter: " "
+    path: "data/scc_retweet.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  scc-tweeter-copen:
+    <<: *common_settings
+    dataset_name: "scc_tweeter_copen"
+    delimiter: " "
+    path: "data/scc_tweeter_copen.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  soc-sign-bitcoinalpha:
+    <<: *common_settings
+    dataset_name: "soc_sign_bitcoin_alpha"
+    delimiter: ","
+    path: "data/soc-sign-bitcoinalpha.csv"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  soc-sign-bitcoinotc:
+    <<: *common_settings
+    dataset_name: "soc_sign_bitcoin_otc"
+    delimiter: ","
+    path: "data/soc-sign-bitcoinotc.csv"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  sx-askubuntu:
+    <<: *common_settings
+    dataset_name: "sx_askubuntu"
+    delimiter: " "
+    path: "data/sx-askubuntu.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  sx-mathoverflow:
+    <<: *common_settings
+    dataset_name: "sx_mathoverflow"
+    delimiter: " "
+    path: "data/sx-mathoverflow.txt"
+    source_idx: 0
+    target_idx: 1
+    type: "edge_list"
+
+  synthetic-n-5000-1:
+    <<: *common_settings
+    dataset_name: "synthetic_n_5000_1"
+    delimiter: " "
+    ground_truth_attr: "communities"
+    path: "data/synthetic_n_5000_1/"
+    source_idx: 0
+    target_idx: 1
+    type: "lfr"

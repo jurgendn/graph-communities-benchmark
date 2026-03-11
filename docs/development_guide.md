@@ -133,7 +133,7 @@ python -c "from src.algorithms.factory import load_algorithms; print(sorted(load
 ### Temporal dataset
 
 1. Place the local file under `data/`.
-2. Add an entry under `datasets` in [`config/dataset_config.yaml`](../config/dataset_config.yaml).
+2. Add an entry under `datasets` in [`config/dynamic_dataset_config.yaml`](../config/dynamic_dataset_config.yaml).
 3. Set `type` to `edge_list` or `lfr`.
 4. Optionally add the dataset key to `target_datasets`.
 
@@ -156,14 +156,18 @@ datasets:
 ### Static dataset
 
 1. Place the local file under `data/`.
-2. Add an entry under `static_graphs` in [`config/dataset_config.yaml`](../config/dataset_config.yaml).
-3. Optionally add the dataset key to `target_static_datasets`.
+2. Add an entry under `datasets` in [`config/static_dataset_config.yaml`](../config/static_dataset_config.yaml).
+3. Optionally add the dataset key to `target_datasets`.
 
 Example:
 
 ```yaml
-static_graphs:
+common: &common_settings
+  preload_fraction: 1.0
+
+datasets:
   my_static_graph:
+    <<: *common_settings
     path: ./data/my_static_graph.txt
     dataset_name: MyStaticGraph
     source_idx: 0
@@ -196,7 +200,7 @@ The loader is implemented in [`src/dataloader/data_reader.py`](../src/dataloader
 1. Implement the metric in `src/evaluations/`.
 2. Compute it during evaluation in [`src/pipeline_utils.py`](../src/pipeline_utils.py).
 3. Extend [`src/factory/communities.py`](../src/factory/communities.py) if new traces or averages are needed.
-4. Add the metric key to [`config/visualization.yaml`](../config/visualization.yaml) if it should appear in fetched and plotted outputs.
+4. Add the metric key to [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml) and/or [`config/visualization_static.yaml`](../config/visualization_static.yaml) if it should appear in fetched and plotted outputs.
 
 ## Important Modules
 
@@ -221,5 +225,5 @@ The loader is implemented in [`src/dataloader/data_reader.py`](../src/dataloader
 - Keep snapshot algorithms stateless when possible; the wrapper will handle per-snapshot iteration.
 - Keep temporal algorithms explicit about which state they carry from one snapshot to the next.
 - Keep algorithm config entries simple and readable; most users will interact with YAML before they touch Python.
-- When changing plot behavior, verify both [`config/visualization.yaml`](../config/visualization.yaml) and the helpers under [`src/visualization/`](../src/visualization/).
+- When changing plot behavior, verify the relevant visualization config file and the helpers under [`src/visualization/`](../src/visualization/).
 - Because `data/`, `experiments/`, and `assets/` are ignored, document any required local setup when adding new workflows.

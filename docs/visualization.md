@@ -45,26 +45,33 @@ The experiment pipeline reads Comet runs, stores raw JSON locally, merges runs b
 ./scripts/plot.sh
 ```
 
+You can also target one benchmark mode:
+
+```bash
+./scripts/plot.sh dynamic
+./scripts/plot.sh static
+```
+
 That script runs:
 
 ```bash
-PYTHONPATH=. python tools/fetch_and_merge.py
-PYTHONPATH=. python tools/plots.py
+PYTHONPATH=. python tools/fetch_and_merge.py --benchmark-type all
+PYTHONPATH=. python tools/plots.py --benchmark-type all
 ```
 
 ### Fetch and merge only
 
 ```bash
-PYTHONPATH=. python tools/fetch_and_merge.py
-PYTHONPATH=. python tools/fetch_and_merge.py --force
-PYTHONPATH=. python tools/fetch_and_merge.py --skip-merge
+PYTHONPATH=. python tools/fetch_and_merge.py --benchmark-type dynamic
+PYTHONPATH=. python tools/fetch_and_merge.py --benchmark-type static --force
+PYTHONPATH=. python tools/fetch_and_merge.py --benchmark-type all --skip-merge
 ```
 
 ### Generate plots only
 
 ```bash
-PYTHONPATH=. python tools/plots.py
-PYTHONPATH=. python tools/plots.py --metric runtime
+PYTHONPATH=. python tools/plots.py --benchmark-type all
+PYTHONPATH=. python tools/plots.py --benchmark-type static --metric runtime
 ```
 
 ## Pipeline Components
@@ -76,7 +83,7 @@ Implemented in [`src/visualization/data.py`](../src/visualization/data.py).
 - connects to the Comet API
 - fetches configured metrics for each configured project
 - caches fetched experiment ids via `.fetched_experiments.json`
-- writes raw JSON files to `experiments/raw/<project>/`
+- writes raw JSON files to `experiments/<benchmark-type>/raw/<project>/`
 
 ### `Merger`
 
@@ -84,8 +91,9 @@ Also in [`src/visualization/data.py`](../src/visualization/data.py).
 
 - reads raw experiment JSON
 - groups runs by algorithm name
-- categorizes runs by batch range
-- writes merged per-metric JSON to `experiments/merged/<project>/<batch-range>/`
+- categorizes dynamic runs by batch range
+- writes merged per-metric JSON to `experiments/dynamic/merged/<project>/<batch-range>/` for dynamic benchmarks
+- writes merged per-metric JSON to `experiments/static/merged/<project>/` for static benchmarks
 
 ### `GroupedPlotter`
 
@@ -95,24 +103,26 @@ Implemented in [`src/visualization/core.py`](../src/visualization/core.py).
 - supports modularity box/bar/line plots
 - supports runtime bar plots
 - supports time-series plots for metrics such as `num_communities`
+- writes figures to `assets/<benchmark-type>/...`
 
 ## Configuration
 
-Visualization behavior is controlled by [`config/visualization.yaml`](../config/visualization.yaml).
+Visualization behavior is controlled by [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml) and [`config/visualization_static.yaml`](../config/visualization_static.yaml).
 
 Important sections:
 
 - `workspace`
+- `directories`
 - `metric_keys`
 - `projects`
-- `plotter.common_plotter_settings`
-- `plotter.grouped_plotter`
+- `use_batch_ranges`
+- `plotter`
 
 ## Output Locations
 
-- raw exports: `experiments/raw/`
-- merged metric files: `experiments/merged/`
-- generated figures: `assets/grouped/`
+- raw exports: `experiments/dynamic/raw/`, `experiments/static/raw/`
+- merged metric files: `experiments/dynamic/merged/`, `experiments/static/merged/`
+- generated figures: `assets/dynamic/`, `assets/static/`
 
 ## Common Issues
 
@@ -124,10 +134,10 @@ Run the tools with `PYTHONPATH=.` or use `./scripts/plot.sh`.
 
 - verify `COMET_API_KEY`
 - verify `COMET_WORKSPACE`
-- verify project names in [`config/visualization.yaml`](../config/visualization.yaml)
+- verify project names in the selected config file under [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml) or [`config/visualization_static.yaml`](../config/visualization_static.yaml)
 
 ### Missing plots for a dataset
 
-- confirm merged files exist under `experiments/merged/<project>/`
+- confirm merged files exist under `experiments/<benchmark-type>/merged/<project>/`
 - confirm the dataset is included in the configured plot groups
-- confirm the metric name exists in `metric_keys`
+- confirm the metric name exists in `metric_keys` inside the selected visualization config file

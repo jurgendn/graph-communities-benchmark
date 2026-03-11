@@ -44,7 +44,14 @@ class Fetcher:
         with open(fetched_file, "w", encoding="utf-8") as fh:
             json.dump({"experiment_ids": sorted(list(fetched_ids))}, fh, indent=2)
 
-    def fetch_project(self, project: str, metric_keys: List[str], out_dir: Path = Path("data/raw"), force: bool = False, hyperparameter_keys: Optional[List[str]] = None):
+    def fetch_project(
+        self,
+        project: str,
+        metric_keys: List[str],
+        out_dir: Path = Path("data/raw"),
+        force: bool = False,
+        hyperparameter_keys: Optional[List[str]] = None,
+    ):
         """
         Fetch experiments for a project and save raw metrics.
         Only fetches new experiments not previously fetched.
@@ -140,7 +147,7 @@ class Merger:
         self.merge_dir = Path(merge_dir)
         self.batch_range_categories = batch_range_categories or {}
 
-    def merge_project(self, project: str, metric_keys: List[str]) -> bool:
+    def merge_project(self, project: str, metric_keys: List[str], use_batch_ranges: bool = True) -> bool:
         """
         Merge all raw experiments for a project into aggregated metrics.
 
@@ -181,7 +188,7 @@ class Merger:
                 norm_hyperparams = normalize_params(hyperparams)
                 batch_range_value = norm_hyperparams.get("batch-range") or norm_hyperparams.get("batch_range")
                 batch_range_value = to_float(batch_range_value)
-                batch_range = self._categorize_batch_size(batch_range_value)
+                batch_range = self._categorize_batch_size(batch_range_value) if use_batch_ranges else ""
 
                 # Initialize batch range if needed
                 if batch_range not in merged_by_range:
@@ -201,8 +208,7 @@ class Merger:
         # Write merged metrics organized by batch range
         success = True
         for batch_range, range_data in merged_by_range.items():
-            # Create batch range subdirectory
-            batch_range_dir = project_merge / batch_range
+            batch_range_dir = project_merge / batch_range if batch_range else project_merge
             batch_range_dir.mkdir(parents=True, exist_ok=True)
 
             for metric_key in metric_keys:
@@ -213,7 +219,8 @@ class Merger:
                         json.dump(merged_metric, fh, indent=2)
                     print(f"  Wrote merged metric {metric_key} to {out_file}")
                 except Exception as e:
-                    print(f"  Failed to write merged metric {metric_key} for {project}/{batch_range}: {e}")
+                    location = f"{project}/{batch_range}" if batch_range else project
+                    print(f"  Failed to write merged metric {metric_key} for {location}: {e}")
                     success = False
 
         return success

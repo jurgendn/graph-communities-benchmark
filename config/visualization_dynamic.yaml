@@ -1,0 +1,129 @@
+workspace: "d-ng-nguy-n"
+
+directories:
+  raw_dir: "experiments/dynamic/raw"
+  merge_dir: "experiments/dynamic/merged"
+  output_dir: "assets/dynamic"
+
+hyperparameters:
+  - batch-range
+
+metric_keys:
+  - "cdlib_modularity"
+  - "customize_q0_modularity"
+  - "num_communities"
+  - "runtime"
+
+use_batch_ranges: true
+
+projects:
+  - graph-community-detection-dynamic-collegemsg
+  - graph-community-detection-dynamic-email-enron-large
+  - graph-community-detection-dynamic-ia-frwikinews-user-edits
+  - graph-community-detection-dynamic-soc_sign_bitcoin_otc
+  - graph-community-detection-dynamic-soc_sign_bitcoin_alpha
+  - graph-community-detection-dynamic-ca-condmat
+  - graph-community-detection-dynamic-sx_mathoverflow
+  - graph-community-detection-dynamic-edit-enwikibooks
+  - graph-community-detection-dynamic-lfr_large_community_size
+  - graph-community-detection-dynamic-bio-wormnet-v3
+  - graph-community-detection-dynamic-lfr_small_community_size
+  - graph-community-detection-dynamic-ca-hepph
+  - graph-community-detection-dynamic-ca-astroph
+  - graph-community-detection-dynamic-scc_infect_dublin
+  - graph-community-detection-dynamic-scc_infect_hyper
+  - graph-community-detection-dynamic-scc_tweeter_copen
+  - graph-community-detection-dynamic-scc_retweet
+  - graph-community-detection-dynamic-sx_askubuntu
+
+plotter:
+  common_plotter_settings:
+    batch_range_categories:
+      large: 0.001
+      medium: 0.0001
+      small: 0.00001
+    synthetic_datasets: &dynamic_synthetic_datasets
+      - graph-community-detection-dynamic-lfr_large_community_size
+      - graph-community-detection-dynamic-lfr_small_community_size
+    real_world_datasets: &dynamic_real_world_datasets
+      - graph-community-detection-dynamic-bio-wormnet-v3
+      - graph-community-detection-dynamic-ca-condmat
+      - graph-community-detection-dynamic-ca-hepph
+      - graph-community-detection-dynamic-ca-astroph
+      - graph-community-detection-dynamic-collegemsg
+      - graph-community-detection-dynamic-edit-enwikibooks
+      - graph-community-detection-dynamic-ia-frwikinews-user-edits
+      - graph-community-detection-dynamic-soc_sign_bitcoin_alpha
+      - graph-community-detection-dynamic-soc_sign_bitcoin_otc
+      - graph-community-detection-dynamic-sx_askubuntu
+      - graph-community-detection-dynamic-email-enron-large
+      - graph-community-detection-dynamic-scc_infect_dublin
+      - graph-community-detection-dynamic-scc_infect_hyper
+      - graph-community-detection-dynamic-scc_tweeter_copen
+      - graph-community-detection-dynamic-scc_retweet
+      - graph-community-detection-dynamic-sx_mathoverflow
+    projects_name_mapping:
+      graph-community-detection-dynamic-bio-wormnet-v3: "Bio-WormNet-v3"
+      graph-community-detection-dynamic-ca-condmat: "CA-CondMat"
+      graph-community-detection-dynamic-ca-hepph: "CA-Hepph"
+      graph-community-detection-dynamic-ca-astroph: "CA-AstroPh"
+      graph-community-detection-dynamic-collegemsg: "CollegeMsg"
+      graph-community-detection-dynamic-edit-enwikibooks: "Edit-Enwikibooks"
+      graph-community-detection-dynamic-email-enron-large: "Email-Enron-Large"
+      graph-community-detection-dynamic-ia-frwikinews-user-edits: "IA-FrWikiNews-User-Edits"
+      graph-community-detection-dynamic-lfr_large_community_size: "LFR-Large-Community-Size"
+      graph-community-detection-dynamic-lfr_small_community_size: "LFR-Small-Community-Size"
+      graph-community-detection-dynamic-scc_infect_dublin: "SCC-Infect-Dublin"
+      graph-community-detection-dynamic-scc_infect_hyper: "SCC-Infect-Hyper"
+      graph-community-detection-dynamic-scc_retweet: "SCC-Retweet"
+      graph-community-detection-dynamic-scc_tweeter_copen: "SCC-Tweeter-Copen"
+      graph-community-detection-dynamic-soc_sign_bitcoin_alpha: "Soc-Sign-Bitcoin-Alpha"
+      graph-community-detection-dynamic-soc_sign_bitcoin_otc: "Soc-Sign-Bitcoin-OTC"
+      graph-community-detection-dynamic-sx_askubuntu: "SX-AskUbuntu"
+      graph-community-detection-dynamic-sx_mathoverflow: "SX-MathOverflow"
+    selected_algorithms:
+      - coach
+      - tiles
+      - core_expansion
+      - graph_entropy
+      - overlapping_rwgp_df
+    methods_name:
+      coach: CoAcH
+      core_expansion: Core Expansion
+      graph_entropy: Graph Entropy
+      umstmo: UMSTMO
+      overlapping_rwgp_df: RWGP-DFL-Overlap
+      tiles: Tiles
+      slpa: SLPA
+    colors:
+      coach: "#1B4F72"
+      core_expansion: "#E09F3E"
+      graph_entropy: "#2E8B57"
+      slpa: "#8E44AD"
+      umstmo: "#C0392B"
+      overlapping_rwgp_df: "#E74C3C"
+      tiles: "#17A2B8"
+    orders:
+      - overlapping_rwgp_df
+      - coach
+      - core_expansion
+      - graph_entropy
+      - tiles
+      - slpa
+    markers:
+      coach: "o"
+      core_expansion: "s"
+      graph_entropy: "D"
+      umstmo: "^"
+      overlapping_rwgp_df: "v"
+      slpa: "P"
+      tiles: "X"
+  grouped_plotter:
+    synthetic_datasets: *dynamic_synthetic_datasets
+    real_world_datasets: *dynamic_real_world_datasets
+    group_by:
+      - synthetic_datasets
+      - real_world_datasets
+    subplots_layout:
+      synthetic_datasets: [1, 2]
+      real_world_datasets: [2, 5]

@@ -163,11 +163,10 @@ temporal_algorithms:
     params: {}
 ```
 
-### `config/dataset_config.yaml`
+### `config/dynamic_dataset_config.yaml` and `config/static_dataset_config.yaml`
 
 ```yaml
 target_datasets: [college-msg, ...]
-target_static_datasets: [karate, ...]
 
 common:
   max_steps: 50
@@ -178,8 +177,15 @@ datasets:
   college-msg:
     path: "data/CollegeMsg.txt"
     delimiter: " "
+```
 
-static_graphs:
+```yaml
+target_datasets: [karate, ...]
+
+common:
+  preload_fraction: 1.0
+
+datasets:
   karate:
     path: "data/karate.txt"
     delimiter: " "
@@ -323,11 +329,11 @@ After experiments are logged to Comet ML, results can be fetched and plotted loc
 ```
 Comet ML Experiments
     └─► tools/fetch_and_merge.py
-            ├── Download all experiments via Comet ML API
+            ├── Download dynamic/static experiments via Comet ML API
             ├── Group by algorithm and dataset
-            └── Write JSON: experiments/merged/<project>/<metric>.json
+            └── Write JSON: experiments/<benchmark-type>/merged/<project>/...
                     └─► tools/plots.py
                             ├── Read merged JSON files
                             ├── Generate grouped figures per metric
-                            └── Write PNG: assets/<metric>/<size>/*.png
+                            └── Write PNG: assets/<benchmark-type>/<metric>/...
 ```

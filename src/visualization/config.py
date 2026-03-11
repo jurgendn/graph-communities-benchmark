@@ -1,132 +1,92 @@
-"""
-Simple unified configuration loading.
-Parses config/metadata.yaml and caches results.
-"""
+"""Configuration loading helpers for visualization tooling."""
+
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import yaml
+
+
+DEFAULT_MODE = "dynamic"
+
 
 class ConfigManager:
-    """Single configuration manager for the entire project."""
+    """Single configuration manager for visualization workflows."""
 
     def __init__(self, root: Path = Path(".")):
         self.root = Path(root)
-        self.cfg_path = self.root / "config" / "visualization.yaml"
-        self._cache: Dict[str, Any] = {}
-        self._loaded = False
+        self._cache: Dict[str, Dict[str, Any]] = {}
 
-    def _load_yaml(self) -> Dict[str, Any]:
-        """Load YAML with fallback to basic parsing."""
-        if not self.cfg_path.exists():
+    def _cfg_path(self, benchmark_type: str) -> Path:
+        return self.root / "config" / f"visualization_{benchmark_type}.yaml"
+
+    def _load_yaml(self, benchmark_type: str) -> Dict[str, Any]:
+        cfg_path = self._cfg_path(benchmark_type)
+        if not cfg_path.exists():
             return {}
+        with open(cfg_path, "r", encoding="utf-8") as fh:
+            return yaml.safe_load(fh) or {}
 
-        # Try pyyaml first
-        try:
-            import yaml
-            with open(self.cfg_path, "r", encoding="utf-8") as fh:
-                return yaml.safe_load(fh) or {}
-        except ImportError:
-            pass
+    def get(self, benchmark_type: str = DEFAULT_MODE) -> Dict[str, Any]:
+        if benchmark_type not in self._cache:
+            self._cache[benchmark_type] = self._load_yaml(benchmark_type)
+        return self._cache[benchmark_type]
 
-        # Fallback: basic manual parsing for simple YAML
-        return self._parse_yaml_basic()
+    def available_modes(self) -> List[str]:
+        available = []
+        for benchmark_type in ("dynamic", "static"):
+            if self._cfg_path(benchmark_type).exists():
+                available.append(benchmark_type)
+        return available or [DEFAULT_MODE]
 
-    def _parse_yaml_basic(self) -> Dict[str, Any]:
-        """Basic YAML parser for simple structures."""
-        result = {}
-        try:
-            with open(self.cfg_path, "r", encoding="utf-8") as fh:
-                lines = [line.rstrip("\n") for line in fh]
+    def mode_config(self, benchmark_type: str = DEFAULT_MODE) -> Dict[str, Any]:
+        config = self.get(benchmark_type)
+        if config:
+            return config
+        return self.get(DEFAULT_MODE)
 
-            i = 0
-            while i < len(lines):
-                line = lines[i]
-                stripped = line.strip()
-
-                # Skip empty/comment lines
-                if not stripped or stripped.startswith("#"):
-                    i += 1
-                    continue
-
-                # Top-level key with list value
-                if not line.startswith(" ") and stripped.endswith(":"):
-                    key = stripped[:-1]
-                    items = []
-                    i += 1
-
-                    # Collect list items
-                    while i < len(lines):
-                        lline = lines[i]
-                        if not lline.strip() or lline.strip().startswith("#"):
-                            i += 1
-                            continue
-                        if not lline.startswith(" "):
-                            break
-                        if lline.strip().startswith("- "):
-                            items.append(lline.strip()[2:].strip().strip('"').strip("'"))
-                            i += 1
-                        else:
-                            break
-
-                    result[key] = items if items else None
-                else:
-                    i += 1
-
-            return result
-        except Exception:
-            return {}
-
-    def get(self) -> Dict[str, Any]:
-        """Get full config (cached)."""
-        if not self._loaded:
-            self._cache = self._load_yaml()
-            self._loaded = True
-        return self._cache
-
-    def directories(self) -> Dict[str, Path]:
-        """Get directory settings."""
+    def directories(self, benchmark_type: str = DEFAULT_MODE) -> Dict[str, Path]:
+        mode_cfg = self.mode_config(benchmark_type)
+        directories = mode_cfg.get("directories", {})
         return {
-            "raw_dir": Path(self.get().get("raw_dir", "experiments/raw")),
-            "merge_dir": Path(self.get().get("merge_dir", "experiments/merged")),
-            "output_dir": Path(self.get().get("output_dir", "assets/grouped")),
+            "raw_dir": Path(directories.get("raw_dir", f"experiments/{benchmark_type}/raw")),
+            "merge_dir": Path(directories.get("merge_dir", f"experiments/{benchmark_type}/merged")),
+            "output_dir": Path(directories.get("output_dir", f"assets/{benchmark_type}")),
         }
 
     def workspace(self) -> Optional[str]:
-        """Get workspace name."""
-        return self.get().get("workspace")
+        for benchmark_type in self.available_modes():
+            workspace = self.get(benchmark_type).get("workspace")
+            if workspace:
+                return workspace
+        return None
 
-    def metric_keys(self) -> List[str]:
-        """Get list of metrics to process."""
-        return self.get().get("metric_keys", [])
+    def metric_keys(self, benchmark_type: str = DEFAULT_MODE) -> List[str]:
+        return self.mode_config(benchmark_type).get("metric_keys", [])
 
-    def projects(self) -> List[str]:
-        """Get list of projects."""
-        return self.get().get("projects", [])
+    def projects(self, benchmark_type: str = DEFAULT_MODE) -> List[str]:
+        return self.mode_config(benchmark_type).get("projects", [])
 
-    def hyperparameters(self) -> List[str]:
-        """Get list of hyperparameters."""
-        return self.get().get("hyperparameters", [])
+    def hyperparameters(self, benchmark_type: str = DEFAULT_MODE) -> List[str]:
+        return self.mode_config(benchmark_type).get("hyperparameters", [])
 
-    def plotter(self) -> Dict[str, Any]:
-        """Get plotter configuration."""
-        return self.get().get("plotter", {})
+    def plotter(self, benchmark_type: str = DEFAULT_MODE) -> Dict[str, Any]:
+        return self.mode_config(benchmark_type).get("plotter", {})
 
-    def dataset_info(self) -> Dict[str, Any]:
-        """Get synthetic/real-world dataset info."""
-        plotter_cfg = self.plotter()
+    def uses_batch_ranges(self, benchmark_type: str = DEFAULT_MODE) -> bool:
+        return bool(self.mode_config(benchmark_type).get("use_batch_ranges", False))
+
+    def dataset_info(self, benchmark_type: str = DEFAULT_MODE) -> Dict[str, Any]:
+        plotter_cfg = self.plotter(benchmark_type)
         common = plotter_cfg.get("common_plotter_settings", {})
-
         return {
             "synthetic": common.get("synthetic_datasets", []),
             "real_world": common.get("real_world_datasets", []),
             "name_mapping": common.get("projects_name_mapping", {}),
         }
 
-    def algorithm_info(self) -> Dict[str, Any]:
-        """Get algorithm styling/ordering info."""
-        plotter_cfg = self.plotter()
+    def algorithm_info(self, benchmark_type: str = DEFAULT_MODE) -> Dict[str, Any]:
+        plotter_cfg = self.plotter(benchmark_type)
         common = plotter_cfg.get("common_plotter_settings", {})
-
         return {
             "selected": common.get("selected_algorithms", []),
             "names": common.get("methods_name", {}),
@@ -135,8 +95,7 @@ class ConfigManager:
             "order": common.get("orders", []),
         }
 
-    def batch_range_categories(self) -> Dict[str, float]:
-        """Get batch range categories (name -> threshold)."""
-        plotter_cfg = self.plotter()
+    def batch_range_categories(self, benchmark_type: str = DEFAULT_MODE) -> Dict[str, float]:
+        plotter_cfg = self.plotter(benchmark_type)
         common = plotter_cfg.get("common_plotter_settings", {})
         return common.get("batch_range_categories", {})

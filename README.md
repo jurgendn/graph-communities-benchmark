@@ -131,6 +131,20 @@ python main_static.py --builtin karate --num-runs 1
 ./scripts/plot.sh
 ```
 
+Or target one benchmark mode:
+
+```bash
+./scripts/plot.sh dynamic
+./scripts/plot.sh static
+```
+
+Manual equivalents:
+
+```bash
+PYTHONPATH=. python tools/fetch_and_merge.py --benchmark-type dynamic
+PYTHONPATH=. python tools/plots.py --benchmark-type dynamic
+```
+
 See [Quick Start](docs/quick_start.md) for more examples, including LFR input and static datasets from config.
 
 ## CLI Highlights
@@ -178,8 +192,10 @@ graph-communities-benchmark/
 |- main_static.py
 |- config/
 |  |- algorithms.yaml
-|  |- dataset_config.yaml
-|  `- visualization.yaml
+|  |- dynamic_dataset_config.yaml
+|  |- static_dataset_config.yaml
+|  |- visualization_dynamic.yaml
+|  `- visualization_static.yaml
 |- docs/
 |- scripts/
 |  |- benchmark.sh
@@ -215,9 +231,10 @@ Details are in [docs/metrics.md](docs/metrics.md).
 ## Data And Outputs
 
 - Raw datasets are expected under `data/` by default.
-- Raw Comet exports are written under `experiments/raw/`.
-- Merged plot-ready data is written under `experiments/merged/`.
-- Generated figures are written under `assets/grouped/`.
+- Raw Comet exports are written under `experiments/dynamic/raw/` and `experiments/static/raw/`.
+- Merged plot-ready data is written under `experiments/dynamic/merged/` and `experiments/static/merged/`.
+- Generated figures are written under `assets/dynamic/` and `assets/static/`.
+- Plot settings live in `config/visualization_dynamic.yaml` and `config/visualization_static.yaml`.
 
 Note: `data/`, `experiments/`, and `assets/` are gitignored in this repository.
 
@@ -226,6 +243,7 @@ Note: `data/`, `experiments/`, and `assets/` are gitignored in this repository.
 - `main.py` is the temporal and LFR entry point; it can run both snapshot and temporal algorithms.
 - `main_static.py` is the static entry point.
 - Static graphs reuse the same evaluation and logging pipeline by loading as `TemporalGraph(base_graph=G, steps=[])`.
+- Comet projects are now mode-specific, using `graph-community-detection-dynamic-*` and `graph-community-detection-static-*` names.
 - Shared model code lives under `src/models/common/`; algorithm implementations live under `src/models/static/` and `src/models/dynamic/`.
 - Some CDlib algorithms may require optional third-party packages beyond `requirements.txt`.
 - The `.env.example` file includes `COMET_PROJECT_NAME`, but current benchmark runs derive the Comet project name from the dataset automatically.

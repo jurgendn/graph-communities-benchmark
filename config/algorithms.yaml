@@ -2,12 +2,15 @@
 
 # Snapshot algorithms run independently on each snapshot.
 target_snapshot_algorithms:
+  - vast-cosine-overlap
   - coach
+  # - copra
+  # - big_clam
+  - core_expansion
+  - graph_entropy
   # - percomvc
   # - big_clam
   # - slpa
-  - core_expansion
-  - graph_entropy
 
 # Temporal algorithms consume the full temporal graph.
 target_temporal_algorithms:
@@ -31,7 +34,7 @@ snapshot_algorithms:
     function: "angel"
     params:
       threshold: 0.25
-    clustering_type: "crisp"
+    clustering_type: "overlapping"
     metadata: {}
     description: "ANGEL: A New Graph-based Entity Linking algorithm"
 
@@ -48,7 +51,7 @@ snapshot_algorithms:
     module: "cdlib.algorithms"
     function: "umstmo"
     params: {}
-    clustering_type: "crisp"
+    clustering_type: "overlapping"
     metadata: {}
     description: "Universal Multi-Scale Community Detection"
 
@@ -64,7 +67,7 @@ snapshot_algorithms:
     module: "cdlib.algorithms"
     function: "core_expansion"
     params: {}
-    clustering_type: "crisp"
+    clustering_type: "overlapping"
     metadata: {}
     description: "Core Expansion algorithm for overlapping community detection"
 
@@ -120,7 +123,7 @@ snapshot_algorithms:
     module: "cdlib.algorithms.overlapping_partition"
     function: "walkscan"
     params: {}
-    clustering_type: "crisp"
+    clustering_type: "overlapping"
     metadata: {}
     description: "Walk-based SCAN algorithm for overlapping communities"
 
@@ -145,17 +148,29 @@ snapshot_algorithms:
     module: "cdlib.algorithms"
     function: "ebgc"
     params: {}
-    clustering_type: "crisp"
+    clustering_type: "overlapping"
     metadata: {}
     description: "Entropy-based Graph Clustering"
 
   vast-cosine-overlap:
-    module: "src.models.static.overlap.vast_cosine_overlap"
-    function: "VASTCosineOverlap"
-    params: {}
+    module: "src.models.static.overlap.cosine_overlap"
+    function: "vast_cosine_overlap"
+    params:
+      theta: 0.85
+      walk_power: 3
     clustering_type: "overlapping"
     metadata: {}
     description: "VAST Cosine Overlap for overlapping community detection"
+
+  copra:
+    module: "src.models.static.overlap.copra"
+    function: "copra"
+    params:
+      iterations: 10
+      max_communities: 5
+    clustering_type: "overlapping"
+    metadata: {}
+    description: "COPRA: Community Overlap Propagation Algorithm"
 
 temporal_algorithms:
   df_louvain:
