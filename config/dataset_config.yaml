@@ -1,197 +1,404 @@
 # Dataset Configuration for Community Detection Benchmarks
 # Each dataset entry contains the parameters required for benchmarking
 
-# Dataset Configuration for Community Detection Benchmarks
-# Each dataset entry contains the parameters required for benchmarking
-
 target_datasets:
-  - college-msg
-  - soc-sign-bitcoinotc
-  - soc-sign-bitcoinalpha
-  - ca-condmat
-  - ca-hepph
-  - ca-astroph
   - email-enron-large
-  - ia-frwikinews-user-edits
-  - edit-enwikibooks
-  - bio-wormnet-v3
-  # # End of target datasets, additional datasets can be added below for further analysis
-  # - lfr-large-community-size
-  # - sx-mathoverflow
-  # - lfr-small-community-size
-  # - scc-infect-hyper
-  # - scc-tweeter-copen
-  # - scc-retweet
+  - synthetic-n-5000-1
 
 common: &common_settings
   max_steps: 9
   initial_fraction: 0.4
-  # batch_range: 0.001 # Large
-  # batch_range: 0.0001 # Medium
-  batch_range: 0.00001 # Small
+  batch_range: 0.0001
 
 datasets:
   email-enron-large:
-    path: ./data/email-enron-large.txt
-    dataset_name: email-Enron-large
+    <<: *common_settings
+    dataset_name: "email-Enron-large"
+    delimiter: " "
+    path: "./data/email-enron-large.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: " "
-    <<: *common_settings
-  
+    type: "edge_list"
+
   bio-wormnet-v3:
-    path: ./data/bio-WormNet-v3.txt
-    dataset_name: bio-WormNet-v3
+    <<: *common_settings
+    dataset_name: "bio-WormNet-v3"
+    delimiter: " "
+    path: "./data/bio-WormNet-v3.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: " "
-    <<: *common_settings
+    type: "edge_list"
 
   ca-astroph:
-    path: ./data/ca-AstroPh.txt
-    dataset_name: ca-AstroPh
+    <<: *common_settings
+    dataset_name: "ca-AstroPh"
+    path: "./data/ca-AstroPh.txt"
     source_idx: 0
     target_idx: 1
-    <<: *common_settings
+    type: "edge_list"
 
   ca-condmat:
-    path: ./data/ca-CondMat.txt
-    dataset_name: ca-CondMat
+    <<: *common_settings
+    dataset_name: "ca-CondMat"
+    path: "./data/ca-CondMat.txt"
     source_idx: 0
     target_idx: 1
-    <<: *common_settings
+    type: "edge_list"
 
   ca-hepph:
-    path: ./data/ca-HepPh.txt
-    dataset_name: ca-HepPh
+    <<: *common_settings
+    dataset_name: "ca-HepPh"
+    path: "./data/ca-HepPh.txt"
     source_idx: 0
     target_idx: 1
-    <<: *common_settings
+    type: "edge_list"
 
   college-msg:
-    path: ./data/CollegeMsg.txt
-    dataset_name: CollegeMsg
+    <<: *common_settings
+    dataset_name: "CollegeMsg"
+    delimiter: " "
+    path: "./data/CollegeMsg.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: " "
-    <<: *common_settings
+    type: "edge_list"
 
   edit-enwikibooks:
-    path: ./data/edit-enwikibooks.txt
-    dataset_name: edit-enwikibooks
+    <<: *common_settings
+    dataset_name: "edit-enwikibooks"
+    delimiter: " "
+    path: "./data/edit-enwikibooks.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: " "
-    <<: *common_settings
+    type: "edge_list"
 
   ia-contacts-dublin:
-    path: ./data/ia-contacts_dublin.txt
-    dataset_name: ia-contacts-dublin
+    <<: *common_settings
+    dataset_name: "ia-contacts-dublin"
+    delimiter: ","
+    path: "./data/ia-contacts_dublin.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: ","
-    <<: *common_settings
+    type: "edge_list"
 
   ia-digg-reply:
-    path: ./data/ia-digg-reply.txt
-    dataset_name: ia-digg-reply
+    <<: *common_settings
+    dataset_name: "ia-digg-reply"
+    delimiter: " "
+    path: "./data/ia-digg-reply.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: " "
-    <<: *common_settings
+    type: "edge_list"
 
   ia-frwikinews-user-edits:
-    path: ./data/ia-frwikinews-user-edits.txt
-    dataset_name: ia-frwikinews-user-edits
+    <<: *common_settings
+    dataset_name: "ia-frwikinews-user-edits"
+    delimiter: " "
+    path: "./data/ia-frwikinews-user-edits.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: " "
-    <<: *common_settings
+    type: "edge_list"
 
   lfr-large-community-size:
-    path: data/lfr_large_community_size.txt
-    dataset_name: lfr_large_community_size
+    <<: *common_settings
+    dataset_name: "lfr_large_community_size"
+    delimiter: " "
+    path: "data/lfr_large_community_size.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: " "
-    <<: *common_settings
+    type: "edge_list"
 
   lfr-small-community-size:
-    path: data/lfr_small_community_size.txt
-    dataset_name: lfr_small_community_size
+    <<: *common_settings
+    dataset_name: "lfr_small_community_size"
+    delimiter: " "
+    path: "data/lfr_small_community_size.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: " "
-    <<: *common_settings
+    type: "edge_list"
 
   scc-infect-dublin:
-    path: data/scc_infect-dublin.txt
-    dataset_name: scc_infect_dublin
+    <<: *common_settings
+    dataset_name: "scc_infect_dublin"
+    delimiter: " "
+    path: "data/scc_infect-dublin.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: " "
-    <<: *common_settings
+    type: "edge_list"
 
   scc-infect-hyper:
-    path: data/scc_infect-hyper.txt
-    dataset_name: scc_infect_hyper
+    <<: *common_settings
+    dataset_name: "scc_infect_hyper"
+    delimiter: " "
+    path: "data/scc_infect-hyper.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: " "
-    <<: *common_settings
+    type: "edge_list"
 
   scc-retweet:
-    path: data/scc_retweet.txt
-    dataset_name: scc_retweet
+    <<: *common_settings
+    dataset_name: "scc_retweet"
+    delimiter: " "
+    path: "data/scc_retweet.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: " "
-    <<: *common_settings
+    type: "edge_list"
 
   scc-tweeter-copen:
-    path: data/scc_tweeter_copen.txt
-    dataset_name: scc_tweeter_copen
+    <<: *common_settings
+    dataset_name: "scc_tweeter_copen"
+    delimiter: " "
+    path: "data/scc_tweeter_copen.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: " "
-    <<: *common_settings
+    type: "edge_list"
 
   soc-sign-bitcoinalpha:
-    path: data/soc-sign-bitcoinalpha.csv
-    dataset_name: soc_sign_bitcoin_alpha
+    <<: *common_settings
+    dataset_name: "soc_sign_bitcoin_alpha"
+    delimiter: ","
+    path: "data/soc-sign-bitcoinalpha.csv"
     source_idx: 0
     target_idx: 1
-    delimiter: ","
-    <<: *common_settings
+    type: "edge_list"
 
   soc-sign-bitcoinotc:
-    path: data/soc-sign-bitcoinotc.csv
-    dataset_name: soc_sign_bitcoin_otc
+    <<: *common_settings
+    dataset_name: "soc_sign_bitcoin_otc"
+    delimiter: ","
+    path: "data/soc-sign-bitcoinotc.csv"
     source_idx: 0
     target_idx: 1
-    delimiter: ","
-    <<: *common_settings
+    type: "edge_list"
 
   sx-askubuntu:
-    path: data/sx-askubuntu.txt
-    dataset_name: sx_askubuntu
+    <<: *common_settings
+    dataset_name: "sx_askubuntu"
+    delimiter: " "
+    path: "data/sx-askubuntu.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: " "
-    <<: *common_settings
+    type: "edge_list"
 
   sx-mathoverflow:
-    path: data/sx-mathoverflow.txt
-    dataset_name: sx_mathoverflow
+    <<: *common_settings
+    dataset_name: "sx_mathoverflow"
+    delimiter: " "
+    path: "data/sx-mathoverflow.txt"
     source_idx: 0
     target_idx: 1
-    delimiter: " "
-    <<: *common_settings
+    type: "edge_list"
 
-  synthetic-graph:
-    path: data/synthetic_graph.txt
-    dataset_name: synthetic_graph
+  synthetic-n-5000-1:
+    <<: *common_settings
+    dataset_name: "synthetic_n_5000_1"
+    delimiter: " "
+    ground_truth_attr: "communities"
+    path: "data/synthetic_n_5000_1/"
     source_idx: 0
     target_idx: 1
+    type: "lfr"
+
+# =============================================================================
+# Static Graph Benchmarking
+# =============================================================================
+# Used by main_static.py --config <key>
+# Each entry is loaded as a single graph (no temporal evolution).
+
+target_static_datasets:
+  - karate
+  - email-enron-large
+  - ca-astroph
+  - ca-condmat
+  - ca-hepph
+  - scc-infect-dublin
+  - scc-infect-hyper
+  - scc-retweet
+  - scc-twitter-copen
+  - soc-blogcatalog-asu
+  - bio-wormnet-v3
+  - lfr-large-community-size
+  - lfr-small-community-size
+
+static_graphs:
+  # ---- Pure edge lists (no timestamps, space-delimited) ----
+
+  karate:
+    dataset_name: "karate"
+    path: "data/karate.txt"
     delimiter: " "
-    <<: *common_settings
+    source_idx: 0
+    target_idx: 1
+
+  email-enron-large:
+    dataset_name: "email-Enron-large"
+    path: "data/email-enron-large.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  ca-astroph:
+    dataset_name: "ca-AstroPh"
+    path: "data/ca-AstroPh.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  ca-condmat:
+    dataset_name: "ca-CondMat"
+    path: "data/ca-CondMat.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  ca-hepph:
+    dataset_name: "ca-HepPh"
+    path: "data/ca-HepPh.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  scc-infect-dublin:
+    dataset_name: "scc-infect-dublin"
+    path: "data/scc_infect-dublin.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  scc-infect-hyper:
+    dataset_name: "scc-infect-hyper"
+    path: "data/scc_infect-hyper.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  scc-retweet:
+    dataset_name: "scc-retweet"
+    path: "data/scc_retweet.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  scc-twitter-copen:
+    dataset_name: "scc-twitter-copen"
+    path: "data/scc_twitter-copen.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  bio-wormnet-v3:
+    dataset_name: "bio-WormNet-v3"
+    path: "data/bio-WormNet-v3.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  lfr-large-community-size:
+    dataset_name: "lfr-large-community-size"
+    path: "data/lfr_large_community_size.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  lfr-small-community-size:
+    dataset_name: "lfr-small-community-size"
+    path: "data/lfr_small_community_size.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  # ---- Edge lists with timestamps (all columns loaded, timestamps ignored) ----
+
+  college-msg:
+    dataset_name: "CollegeMsg"
+    path: "data/CollegeMsg.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  email-eu-core-temporal:
+    dataset_name: "email-Eu-core-temporal"
+    path: "data/email-Eu-core-temporal.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  edit-enwikibooks:
+    dataset_name: "edit-enwikibooks"
+    path: "data/edit-enwikibooks.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  ia-digg-reply:
+    dataset_name: "ia-digg-reply"
+    path: "data/ia-digg-reply.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  ia-frwikinews-user-edits:
+    dataset_name: "ia-frwikinews-user-edits"
+    path: "data/ia-frwikinews-user-edits.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  sx-askubuntu:
+    dataset_name: "sx-askubuntu"
+    path: "data/sx-askubuntu.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  sx-mathoverflow:
+    dataset_name: "sx-mathoverflow"
+    path: "data/sx-mathoverflow.txt"
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+
+  # ---- Comma-delimited ----
+
+  ia-contacts-dublin:
+    dataset_name: "ia-contacts-dublin"
+    path: "data/ia-contacts_dublin.txt"
+    delimiter: ","
+    source_idx: 0
+    target_idx: 1
+
+  soc-sign-bitcoinalpha:
+    dataset_name: "soc-sign-bitcoinalpha"
+    path: "data/soc-sign-bitcoinalpha.csv"
+    delimiter: ","
+    source_idx: 0
+    target_idx: 1
+
+  soc-sign-bitcoinotc:
+    dataset_name: "soc-sign-bitcoinotc"
+    path: "data/soc-sign-bitcoinotc.csv"
+    delimiter: ","
+    source_idx: 0
+    target_idx: 1
+
+  soc-blogcatalog-asu:
+    dataset_name: "soc-BlogCatalog-ASU"
+    path: "data/soc-BlogCatalog-ASU.txt"
+    delimiter: ","
+    source_idx: 0
+    target_idx: 1
+
+  # ---- Tab-delimited ----
+
+  primaryschool:
+    dataset_name: "primaryschool"
+    path: "data/primaryschool.csv"
+    delimiter: "tab"
+    source_idx: 1
+    target_idx: 2
+
+  soc-reddit-hyperlinks-body:
+    dataset_name: "soc-redditHyperlinks-body"
+    path: "data/soc-redditHyperlinks-body.tsv"
+    delimiter: "tab"
+    source_idx: 0
+    target_idx: 1

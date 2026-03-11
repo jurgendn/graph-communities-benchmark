@@ -1,30 +1,27 @@
 # Algorithm Configuration for Community Detection
-# Contains all available community detection algorithms (crisp and overlapping)
 
-# Specify which algorithms to run (in order)
-target_algorithms:
+# Snapshot algorithms run independently on each snapshot.
+target_snapshot_algorithms:
   - coach
   # - percomvc
   # - big_clam
   # - slpa
   - core_expansion
   - graph_entropy
-  - df_louvain
 
-# All available algorithms with their configurations
-# module: Full import path (e.g., "cdlib.algorithms" or "cdlib.algorithms.overlapping_partition")
-# function: Function name to import from the module
-# type: "static" (runs independently per snapshot) or "dynamic" (uses full temporal graph)
-# clustering_type: "overlapping" or "crisp" — determines which modularity metric to use
-algorithms:
+# Temporal algorithms consume the full temporal graph.
+target_temporal_algorithms:
+  - tiles
+  # - df_louvain
+
+snapshot_algorithms:
   big_clam:
-    module: "src.models.static_methods.overlap.big_clam"
+    module: "src.models.static.overlap.big_clam"
     function: "BigClam"
     params:
       num_communities: 10
       iterations: 100
       learning_rate: 0.005
-    type: "static"
     clustering_type: "overlapping"
     metadata: {}
     description: "BigClam: Overlapping community detection algorithm"
@@ -34,7 +31,6 @@ algorithms:
     function: "angel"
     params:
       threshold: 0.25
-    type: "static"
     clustering_type: "crisp"
     metadata: {}
     description: "ANGEL: A New Graph-based Entity Linking algorithm"
@@ -44,7 +40,6 @@ algorithms:
     function: "demon"
     params:
       epsilon: 0.25
-    type: "static"
     clustering_type: "overlapping"
     metadata: {}
     description: "DEMON: a local-first discovery method for overlapping communities"
@@ -53,7 +48,6 @@ algorithms:
     module: "cdlib.algorithms"
     function: "umstmo"
     params: {}
-    type: "static"
     clustering_type: "crisp"
     metadata: {}
     description: "Universal Multi-Scale Community Detection"
@@ -62,7 +56,6 @@ algorithms:
     module: "cdlib.algorithms"
     function: "slpa"
     params: {}
-    type: "static"
     clustering_type: "overlapping"
     metadata: {}
     description: "Speaker-Listener Label Propagation Algorithm"
@@ -71,7 +64,6 @@ algorithms:
     module: "cdlib.algorithms"
     function: "core_expansion"
     params: {}
-    type: "static"
     clustering_type: "crisp"
     metadata: {}
     description: "Core Expansion algorithm for overlapping community detection"
@@ -80,7 +72,6 @@ algorithms:
     module: "cdlib.algorithms"
     function: "graph_entropy"
     params: {}
-    type: "static"
     clustering_type: "overlapping"
     metadata: {}
     description: "Graph Entropy based community detection"
@@ -89,7 +80,6 @@ algorithms:
     module: "cdlib.algorithms"
     function: "coach"
     params: {}
-    type: "static"
     clustering_type: "overlapping"
     metadata: {}
     description: "COACH: Clustering of Overlapping Communities using Hub structures"
@@ -98,7 +88,6 @@ algorithms:
     module: "cdlib.algorithms"
     function: "percomvc"
     params: {}
-    type: "static"
     clustering_type: "overlapping"
     metadata: {}
     description: "Permanence based Overlapping Community Detection"
@@ -107,7 +96,6 @@ algorithms:
     module: "cdlib.algorithms"
     function: "dpclus"
     params: {}
-    type: "static"
     clustering_type: "overlapping"
     metadata: {}
     description: "Density-Periphery based Clustering"
@@ -116,7 +104,6 @@ algorithms:
     module: "cdlib.algorithms"
     function: "ipca"
     params: {}
-    type: "static"
     clustering_type: "overlapping"
     metadata: {}
     description: "Iterative Principal Component Analysis"
@@ -125,7 +112,6 @@ algorithms:
     module: "cdlib.algorithms.overlapping_partition"
     function: "lais2"
     params: {}
-    type: "static"
     clustering_type: "overlapping"
     metadata: {}
     description: "Label Propagation with Improved Seed Selection"
@@ -134,7 +120,6 @@ algorithms:
     module: "cdlib.algorithms.overlapping_partition"
     function: "walkscan"
     params: {}
-    type: "static"
     clustering_type: "crisp"
     metadata: {}
     description: "Walk-based SCAN algorithm for overlapping communities"
@@ -143,7 +128,6 @@ algorithms:
     module: "cdlib.algorithms"
     function: "dcs"
     params: {}
-    type: "static"
     clustering_type: "overlapping"
     metadata: {}
     description: "Distributed Community Search"
@@ -153,7 +137,6 @@ algorithms:
     function: "lfm"
     params:
       alpha: 1.0
-    type: "static"
     clustering_type: "overlapping"
     metadata: {}
     description: "Lancichinetti-Fortunato-Radicchi benchmark for overlapping communities"
@@ -162,38 +145,32 @@ algorithms:
     module: "cdlib.algorithms"
     function: "ebgc"
     params: {}
-    type: "static"
     clustering_type: "crisp"
     metadata: {}
     description: "Entropy-based Graph Clustering"
 
-  # Note: ndocd requires custom implementation class NDOCD()
-  # ndocd:
-  #   module: "src.models.static_methods.overlap.ndocd"
-  #   function: "NDOCD"
-  #   params: {}
-  #   type: "static"
-  #   clustering_type: "overlapping"
-  #   metadata: {}
-  #   description: "Nonnegative Matrix Factorization for Overlapping Community Detection"
+  vast-cosine-overlap:
+    module: "src.models.static.overlap.vast_cosine_overlap"
+    function: "VASTCosineOverlap"
+    params: {}
+    clustering_type: "overlapping"
+    metadata: {}
+    description: "VAST Cosine Overlap for overlapping community detection"
 
-  # Dynamic Frontier Louvain - Crisp (non-overlapping) community detection
+temporal_algorithms:
   df_louvain:
-    module: "src.models.dynamic_methods.crisp.df_louvain"
+    module: "src.models.dynamic.crisp.df_louvain"
     function: "run_df_louvain"
     params: {}
-    type: "dynamic"
     clustering_type: "crisp"
     metadata: {}
     description: "Dynamic Frontier Louvain for crisp community detection in temporal graphs"
 
-  # TILES - Temporal Incremental Link-based Evolutionary System (overlapping)
   tiles:
-    module: "src.models.dynamic_methods.overlap.tiles"
+    module: "src.models.dynamic.overlap.tiles"
     function: "Tiles"
     params:
       obs: 1
-    type: "dynamic"
     clustering_type: "overlapping"
     metadata: {}
     description: "TILES: Temporal Incremental Link-based Evolutionary System"
