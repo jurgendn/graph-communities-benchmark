@@ -98,22 +98,22 @@ def evaluate(
         MethodDynamicResults with all metric traces
     """
     results = MethodDynamicResults()
-    
+
     # Check if ground truth is available
-    has_ground_truth = ground_truth_attr is not None and hasattr(tg, '_ground_truth_attr')
-    
+    has_ground_truth = hasattr(tg, '_ground_truth_clusterings') and tg._ground_truth_clusterings is not None
+
     for i, snapshot in enumerate(tg.iter_snapshots()):
         if i >= len(clusterings):
             break
-            
+
         communities = clusterings[i]
-        
+
         # Use provided runtime or default
         runtime = runtimes[i] if runtimes and i < len(runtimes) else 0.0
-        
+
         # Compute modularity metrics
         cdlib_mod, q0_mod = compute_modularity(snapshot, communities, clustering_type)
-        
+
         results.update_intermediate_results(
             IntermediateResults(
                 runtime=runtime,
@@ -124,17 +124,18 @@ def evaluate(
             )
         )
         results.clusterings.append(communities)
-        
+
         # Compute NMI if ground truth is available
         if has_ground_truth:
+            gt_clustering = tg._ground_truth_clusterings[i]
             nmi = compute_nmi_from_ground_truth(
-                snapshot, communities, ground_truth_attr
+                snapshot, communities, gt_clustering=gt_clustering
             )
-            # Add NMI to results if the attribute exists
+            # Add NMI to results
             if not hasattr(results, 'nmi_trace'):
                 results.nmi_trace = []
             results.nmi_trace.append(nmi)
-    
+
     return results
 
 

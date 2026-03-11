@@ -4,10 +4,11 @@
 
 ![Architecture Diagram](../images/architecture.png)
 
-The Graph Communities Benchmark supports two primary benchmarking workflows:
+The Graph Communities Benchmark supports three primary benchmarking workflows:
 
 1. **Real-world benchmarking** — Edge list files → temporal snapshots → benchmark
-2. **Labeled benchmarking** — GraphML snapshots → temporal graph → benchmark with ground truth
+2. **Labeled benchmarking** — `.gml` snapshots → temporal graph → benchmark with ground truth
+3. **Static benchmarking** — Static edge list / built-in graph → one-snapshot `TemporalGraph` → benchmark
 
 ---
 
@@ -17,7 +18,7 @@ The Graph Communities Benchmark supports two primary benchmarking workflows:
 
 ```
 Edge list file (txt/csv)
-    └─► DataReader.load_from_edge_list()
+    └─► load_txt_dataset()
             ├── Parse edges with timestamps
             ├── Build base graph (initial_fraction of edges)
             └── Create TemporalChanges batches (batch_range)
@@ -34,10 +35,10 @@ Edge list file (txt/csv)
 ### Case 2: Labeled Dataset Benchmarking (with Ground Truth)
 
 ```
-GraphML snapshot folder (snapshot_t0.graphml, snapshot_t1.graphml, ...)
-    └─► DataReader.load_from_graphml_folder()
+GML snapshot folder (snapshot_t0.gml, snapshot_t1.gml, ...)
+    └─► load_lfr_folder()
             ├── Load snapshot_t0 as base graph
-            ├── Extract node['label'] attributes → ground truth communities
+            ├── Extract node ground-truth attributes → ground truth communities
             ├── Load snapshot_t1..tN
             └── Diff consecutive snapshots → TemporalChanges
                     └─► TemporalGraph + Ground Truth
@@ -58,22 +59,28 @@ GraphML snapshot folder (snapshot_t0.graphml, snapshot_t1.graphml, ...)
 
 ## Key Components
 
-### Data Loading — `src/dataloader/data_reader.py`
+### Data Loading — `src/dataloader/`
 
 | Method | Description |
 |--------|-------------|
-| `load_from_edge_list()` | Parse txt/csv edge lists into a `TemporalGraph` |
-| `load_from_graphml_folder()` | Load a series of GraphML snapshots |
-| `extract_ground_truth()` | Parse node label attributes (crisp or overlapping) |
+| `read_edges()` | Shared edge parsing for static and dynamic edge-list inputs |
+| `build_graph()` | Shared weighted graph construction helper |
+| `load_txt_dataset()` | Parse txt/csv edge lists into a temporal `TemporalGraph` |
+| `load_lfr_folder()` | Load a series of `.gml` snapshots |
+| `load_static_as_temporal()` | Load a static graph as `TemporalGraph(..., steps=[])` |
+| `load_builtin_graph()` | Load built-in static graphs such as `karate` |
 
 ### Core Abstractions — `src/factory/`
 
 **`TemporalGraph`** (`src/factory/factory.py`)
 - `base_graph` — NetworkX graph at t=0
 - `steps[]` — List of `TemporalChanges` (edge insertions/deletions per batch)
+- `_ground_truth_clusterings` — Optional precomputed ground truth per snapshot
 - `__getitem__(idx)` — Reconstruct snapshot at time t
 - `iter_snapshots()` — Iterate all snapshots in order
 - `average_changes_per_snapshot()` — Temporal evolution metric
+
+Static graphs use the same abstraction with `steps=[]`, so `len(tg) == 1`.
 
 ### Algorithm Layer — `src/algorithms/`
 
@@ -86,7 +93,15 @@ GraphML snapshot folder (snapshot_t0.graphml, snapshot_t1.graphml, ...)
 
 **`DynamicMethodWrapper`** (`wrappers.py`)
 - Passes the full `TemporalGraph` to a temporal algorithm
-- Returns a `MethodDynamicResults` with pre-computed per-snapshot results
+- Returns either `List[NodeClustering]` or preserves pre-computed results from `MethodDynamicResults`
+
+In static mode, only entries from `snapshot_algorithms` are executed. In temporal mode, both `snapshot_algorithms` and `temporal_algorithms` can run.
+
+### Model Implementations — `src/models/`
+
+- `src/models/static/` — snapshot-based algorithm implementations
+- `src/models/dynamic/` — temporal algorithm implementations
+- `src/models/common/` — shared model utilities such as `LouvainMixin`
 
 ### Evaluation Layer — `src/evaluations/`
 
@@ -111,7 +126,7 @@ GraphML snapshot folder (snapshot_t0.graphml, snapshot_t1.graphml, ...)
 
 **`MethodDynamicResults`**
 - `clusterings` — `List[NodeClustering]`, one per snapshot
-- `runtime_trace` — Per-snapshot wall-clock runtimes
+- `runtimes` — Per-snapshot wall-clock runtimes
 - `cdlib_modularity_overlap_trace` — CDlib modularity per snapshot
 - `customize_q0_overlap_trace` — Q0 modularity per snapshot
 - `nmi_trace` — Ground truth NMI per snapshot
@@ -130,19 +145,20 @@ Comet ML integration logs one experiment per benchmark run:
 ### `config/algorithms.yaml`
 
 ```yaml
-target_algorithms: [coach, tiles, ...]
+target_snapshot_algorithms: [coach, ...]
+target_temporal_algorithms: [tiles, ...]
 
-algorithms:
+snapshot_algorithms:
   coach:
     module: "cdlib.algorithms"
     function: "coach"
-    type: "static"              # static | dynamic
     clustering_type: "overlapping"  # crisp | overlapping
     params: {}
+
+temporal_algorithms:
   tiles:
-    module: "cdlib.algorithms"
-    function: "tiles"
-    type: "dynamic"
+    module: "src.models.dynamic.overlap.tiles"
+    function: "Tiles"
     clustering_type: "overlapping"
     params: {}
 ```
@@ -151,6 +167,7 @@ algorithms:
 
 ```yaml
 target_datasets: [college-msg, ...]
+target_static_datasets: [karate, ...]
 
 common:
   max_steps: 50
@@ -161,19 +178,24 @@ datasets:
   college-msg:
     path: "data/CollegeMsg.txt"
     delimiter: " "
+
+static_graphs:
+  karate:
+    path: "data/karate.txt"
+    delimiter: " "
 ```
 
 ---
 
 ## Workflow Comparison
 
-| Aspect | Real-World (Edge List) | Labeled (GraphML Snapshots) |
-|--------|------------------------|-----------------------------|
-| Data source | Single txt/csv file | Folder of GraphML files |
-| Loader | `load_from_edge_list()` | `load_from_graphml_folder()` |
-| Temporal construction | Batches edges by count | Diffs consecutive snapshots |
-| Ground truth | None | Extracted from node attributes |
-| Evaluation | Modularity | Modularity + NMI |
+| Aspect | Real-World (Edge List) | Labeled (`.gml` Snapshots) | Static Graph |
+|--------|------------------------|-----------------------------|--------------|
+| Data source | Single txt/csv file | Folder of `.gml` files | Single file or built-in graph |
+| Loader | `load_txt_dataset()` | `load_lfr_folder()` | `load_static_as_temporal()` |
+| Temporal construction | Batches edges by count | Diffs consecutive snapshots | `steps=[]` |
+| Ground truth | Usually none | Precomputed from node attributes | Optional one clustering |
+| Evaluation | Modularity | Modularity + NMI | Modularity + optional NMI |
 
 ---
 
@@ -185,26 +207,26 @@ datasets:
 | ONMI (CDlib) | Reference implementation | ~10 s/snapshot (large graphs) |
 | ONMI (fast) | Vectorized MGH formula | ~13 ms/snapshot (large graphs) |
 
-**Static vs. Dynamic algorithms:**
+**Snapshot vs. Temporal algorithms:**
 
-- **Static** — Simple, parallelizable, deterministic per snapshot; ignores temporal structure. Examples: `coach`, `angel`, `graph_entropy`, `big_clam`.
-- **Dynamic** — Exploits temporal structure with incremental updates; more complex state management. Examples: `df_louvain`, `tiles`.
+- **Snapshot** — Simple, parallelizable, deterministic per snapshot; ignores temporal structure. Examples: `coach`, `angel`, `graph_entropy`, `big_clam`.
+- **Temporal** — Exploits temporal structure with incremental updates; more complex state management. Examples: `df_louvain`, `tiles`.
 
 ---
 
 ## Extending the Benchmark
 
-### Add a new static algorithm
-1. Create a class inheriting `CommunityDetectionAlgorithm` in `src/algorithms/`
+### Add a new snapshot algorithm
+1. Create a class inheriting `CommunityDetectionAlgorithm` in `src/models/static/`.
 2. Implement `__call__(tg) -> List[NodeClustering]`
 3. Add an entry to `config/algorithms.yaml`
-4. Add the key to `target_algorithms`
+4. Add the key to `target_snapshot_algorithms`
 
-### Add a new dynamic algorithm
+### Add a new temporal algorithm
 1. Create a class inheriting `CommunityDetectionAlgorithm`
 2. Access `tg.steps` for temporal changes and maintain internal state
 3. Return a `MethodDynamicResults` object
-4. Register in `config/algorithms.yaml`
+4. Register it under `temporal_algorithms` in `config/algorithms.yaml`
 
 ### Add a new metric
 1. Implement the metric function in `src/evaluations/`
@@ -219,7 +241,7 @@ datasets:
 ```mermaid
 graph TB
     subgraph Case1["Real-World Dataset Benchmarking"]
-        Start1(["Start"]) --> LoadEdgeList["DataReader.load_from_edge_list()"]
+        Start1(["Start"]) --> LoadEdgeList["load_txt_dataset()"]
 
         subgraph DataLoading1["Temporal Graph Construction"]
             LoadEdgeList --> CreateBaseGraph["Create base graph (initial_fraction)"]
@@ -247,7 +269,7 @@ graph TB
     end
 
     subgraph Case2["Labeled Dataset Benchmarking"]
-        Start2(["Start"]) --> LoadGraphML["DataReader.load_from_graphml_folder()"]
+        Start2(["Start"]) --> LoadGraphML["load_lfr_folder()"]
 
         subgraph DataLoading2["Snapshot Loading"]
             LoadGraphML --> BaseSnap["Load snapshot_t0 as base graph"]
@@ -309,4 +331,3 @@ Comet ML Experiments
                             ├── Generate grouped figures per metric
                             └── Write PNG: assets/<metric>/<size>/*.png
 ```
-

@@ -79,30 +79,55 @@ def compute_modularity(
 def compute_nmi_from_ground_truth(
     graph: nx.Graph,
     clustering: NodeClustering,
-    ground_truth_attr: str = "label",
+    ground_truth_attr: str | None = None,
+    gt_clustering: NodeClustering | None = None,
 ) -> float:
     """
-    Compute NMI between detected communities and ground truth communities.
-    
+    Compute NMI between detected communities and ground truth.
+
     For **crisp** ground truth (each node belongs to exactly one community):
     - Uses standard NMI (normalized_mutual_information)
-    
+
     For **overlapping** ground truth (nodes can belong to multiple communities):
     - Uses ONMI-MGH (overlapping NMI by McDaid-Greene-Hurley)
-    
+
     Ground truth format:
     - Crisp: graph.nodes[node]['label'] = 1 (int)
     - Overlapping: graph.nodes[node]['label'] = '1,23,4,5' (comma-separated string)
-    
+
     Args:
-        graph: The NetworkX graph.
-        clustering: A ``NodeClustering`` object (detected communities).
-        ground_truth_attr: Node attribute containing ground truth (default: 'label').
-    
+        graph: NetworkX graph
+        clustering: Detected communities as NodeClustering
+        ground_truth_attr: Node attribute containing ground truth (optional if gt_clustering provided)
+        gt_clustering: Pre-computed ground truth NodeClustering (takes precedence if provided)
+
     Returns:
-        NMI score (float between 0 and 1).
-        1 = perfect match, 0 = no mutual information.
+        NMI score (0.0 if computation fails)
     """
+    # Use pre-computed ground truth if available
+    if gt_clustering is not None:
+        try:
+            # Determine if overlapping
+            is_overlapping = any(len(comm) > 1 for comm in gt_clustering.communities)
+
+            if is_overlapping:
+                # Overlapping NMI
+                result = overlapping_normalized_mutual_information_MGH_fast(
+                    clustering, gt_clustering
+                )
+                return result.score if result.score is not None else 0.0
+            else:
+                # Crisp NMI
+                result = evaluation.normalized_mutual_information(
+                    clustering, gt_clustering
+                )
+                return result.score if result.score is not None else 0.0
+        except Exception:
+            return 0.0
+
+    # Fall back to extracting from node attributes
+    if ground_truth_attr is None:
+        return 0.0
     # Parse ground truth from node attributes
     ground_truth = {}
     

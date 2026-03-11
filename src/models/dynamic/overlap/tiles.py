@@ -140,7 +140,6 @@ class Tiles(CommunityDetectionAlgorithm):
         """Run TILES on the temporal graph.
 
         Returns:
-            MethodDynamicResults — retained for backward compatibility with
-            ``src/benchmark.py`` / ``main_dynamic.py``.
+            MethodDynamicResults for the unified benchmark pipeline.
         """
         return self.run(tg)

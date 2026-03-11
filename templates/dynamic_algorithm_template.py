@@ -3,8 +3,8 @@ Dynamic Algorithm Template
 ==========================
 
 Copy this file to:
-  src/models/dynamic_methods/overlap/your_algorithm.py   (for overlapping)
-  src/models/dynamic_methods/crisp/your_algorithm.py     (for crisp)
+  src/models/dynamic/overlap/your_algorithm.py   (for overlapping)
+  src/models/dynamic/crisp/your_algorithm.py     (for crisp)
 
 Then:
   1. Rename the class (YourDynamicAlgorithm → something meaningful).
@@ -141,16 +141,15 @@ class YourDynamicAlgorithm(CommunityDetectionAlgorithm):
 # config/algorithms.yaml registration snippet
 # ----------------------------------------------------------------------
 #
-# Add the following block under `algorithms:` in config/algorithms.yaml,
-# then add your algorithm name to `target_algorithms:` to enable it.
+# Add the following block under `temporal_algorithms:` in config/algorithms.yaml,
+# then add your algorithm name to `target_temporal_algorithms:` to enable it.
 #
 # your_dynamic_algorithm:
-#   module: "src.models.dynamic_methods.overlap.your_algorithm"  # adjust path
+#   module: "src.models.dynamic.overlap.your_algorithm"  # adjust path
 #   function: "YourDynamicAlgorithm"
 #   params:
 #     param1: 1
 #     param2: 0.5
-#   type: "dynamic"
 #   clustering_type: "overlapping"   # or "crisp"
 #   metadata: {}
 #   description: "Short description of your dynamic algorithm"

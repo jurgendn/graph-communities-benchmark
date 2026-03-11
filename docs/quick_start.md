@@ -4,12 +4,12 @@ This guide covers the fastest path to running benchmarks and generating plots.
 
 ## Benchmark Entry Points
 
-- `main.py`: unified entry point for static and dynamic algorithms.
-- `main_static.py`: legacy static runner.
-- `main_dynamic.py`: legacy dynamic runner.
+- `main.py`: temporal edge-list and LFR `.gml` entry point.
+- `main_static.py`: static graph entry point.
 - `scripts/benchmark.sh`: dataset-config-driven wrapper around the entry points.
+- `scripts/benchmark_static.sh`: dataset-config-driven wrapper for static graphs.
 
-For new work, use `main.py` unless you specifically need the legacy runners.
+Use `main.py` for temporal/LFR runs and `main_static.py` for static runs.
 
 ## Run A Benchmark With `main.py`
 
@@ -27,7 +27,7 @@ python main.py \
 What happens:
 
 1. The dataset is converted into a `TemporalGraph`.
-2. Target algorithms are loaded from [`config/algorithms.yaml`](../config/algorithms.yaml).
+2. Snapshot and temporal target algorithms are loaded from [`config/algorithms.yaml`](../config/algorithms.yaml).
 3. Each run is evaluated and logged to Comet ML.
 
 ## Useful CLI Options
@@ -50,7 +50,7 @@ Common options:
 | `--max-steps` | Maximum number of temporal updates |
 | `--delete-insert-ratio` | Ratio of deletions to insertions for generated updates |
 | `--num-runs` | Number of runs per algorithm |
-| `--lfr-folder` | Folder of `snapshot_t*.graphml` files |
+| `--lfr-folder` | Folder of `snapshot_t*.gml` files |
 | `--ground-truth-attr` | Ground-truth node attribute for LFR evaluation |
 
 ## Run From Dataset Config
@@ -82,20 +82,51 @@ Run the same benchmark multiple times:
 Notes:
 
 - `benchmark.sh` reads dataset values from [`config/dataset_config.yaml`](../config/dataset_config.yaml).
-- The script only forwards `delete_insert_ratio` automatically for `main_dynamic.py`; if you need a custom value with `main.py`, call `main.py` directly.
+- If you need a custom `delete_insert_ratio`, call `main.py` directly.
 
-## Run On LFR GraphML Snapshots
+## Run A Static Benchmark
 
-If you have temporal GraphML snapshots named `snapshot_t0.graphml`, `snapshot_t1.graphml`, and so on:
+Run a static graph directly from a file:
+
+```bash
+python main_static.py \
+  --dataset-path ./data/karate.txt \
+  --dataset karate \
+  --source-idx 0 \
+  --target-idx 1
+```
+
+Run a configured static dataset:
+
+```bash
+./scripts/benchmark_static.sh --list
+./scripts/benchmark_static.sh karate 1
+```
+
+Run a built-in graph with ground truth:
+
+```bash
+python main_static.py --builtin karate --num-runs 1
+```
+
+Notes:
+
+- Static graphs are loaded as `TemporalGraph(base_graph=G, steps=[])`.
+- `main_static.py` automatically skips temporal algorithms such as `tiles`.
+- `--preload-fraction` benchmarks a partial static graph without creating temporal steps.
+
+## Run On LFR `.gml` Snapshots
+
+If you have temporal snapshots named `snapshot_t0.gml`, `snapshot_t1.gml`, and so on:
 
 ```bash
 python main.py \
-  --lfr-folder ./data/lfr_benchmark/my_lfr \
-  --ground-truth-attr label \
+  --lfr-folder ./data/synthetic_n_5000_1 \
+  --ground-truth-attr communities \
   --max-steps 10
 ```
 
-The loader uses the first snapshot as the base graph and derives temporal changes from the remaining snapshots.
+The loader uses the first snapshot as the base graph, derives temporal changes from later snapshots, and precomputes ground-truth clusterings.
 
 ## Generate Plots
 
@@ -119,6 +150,7 @@ The plot pipeline reads [`config/visualization.yaml`](../config/visualization.ya
 ```bash
 cp .env.example .env
 python main.py --dataset-path ./data/CollegeMsg.txt --dataset CollegeMsg --max-steps 10
+python main_static.py --builtin karate --num-runs 1
 ./scripts/plot.sh
 ```
 

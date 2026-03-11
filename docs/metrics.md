@@ -39,7 +39,7 @@ See [`src/pipeline_utils.py`](../src/pipeline_utils.py).
 
 ## Ground-Truth Evaluation
 
-When `main.py` is run with `--lfr-folder`, the loader stores a ground-truth attribute name and evaluation adds NMI.
+When the loader provides `_ground_truth_clusterings`, evaluation adds NMI.
 
 ### Supported ground-truth formats
 
@@ -50,9 +50,11 @@ When `main.py` is run with `--lfr-folder`, the loader stores a ground-truth attr
 
 ```bash
 python main.py \
-  --lfr-folder ./data/lfr_benchmark/my_lfr \
-  --ground-truth-attr label \
+  --lfr-folder ./data/synthetic_n_5000_1 \
+  --ground-truth-attr communities \
   --max-steps 10
+
+python main_static.py --builtin karate --num-runs 1
 ```
 
 ### NMI behavior

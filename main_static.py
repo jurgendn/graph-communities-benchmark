@@ -1,184 +1,227 @@
-import importlib
-import os
-import time
+"""
+Static graph benchmarking entry point.
 
-import comet_ml  # noqa: F401
+Treats a static graph as a TemporalGraph with steps=[] (1 snapshot).
+Reuses the existing temporal pipeline: run_algorithm -> evaluate -> log_results.
+
+Usage:
+    python main_static.py --dataset karate --dataset-path data/karate.txt
+    python main_static.py --dataset email-enron-large --dataset-path data/email-enron-large.txt
+    python main_static.py --builtin karate
+    python main_static.py --list-builtins
+    python main_static.py --config email-enron-large
+"""
+import argparse
+import os
+import sys
+
+import comet_ml  # noqa: F401 — must be imported before Experiment
 import yaml
-from cdlib import NodeClustering, evaluation
-from comet_ml import Experiment
 from dotenv import load_dotenv
 from tqdm.auto import tqdm
 
-from src.dataloader.data_reader import load_txt_dataset
-from src.evaluations.target_modularity import overlapping_modularity_q0
-from src.factory.communities import IntermediateResults, MethodDynamicResults
-from src.utils.arg_parser import parse_args
+from src.algorithms.factory import load_algorithms
+from src.dataloader.static_loader import load_static_as_temporal, load_builtin_graph, BUILTIN_GRAPHS
+from src.pipeline_utils import run_algorithm, evaluate, log_results
 
-# Load environment variables
 load_dotenv()
 
-
-def load_algorithms_config(config_path: str = "config/algorithms.yaml"):
-    """Load algorithm configuration from YAML file and resolve function references using importlib."""
-    with open(config_path, "r") as f:
-        config = yaml.safe_load(f)
-    
-    target_algorithms = config.get("target_algorithms", [])
-    all_algorithms = config.get("overlapping_algorithms", {})
-    
-    # Build the algorithms dictionary with resolved function references
-    algorithms_dict = {}
-    for algo_name in target_algorithms:
-        if algo_name not in all_algorithms:
-            print(f"Warning: Algorithm '{algo_name}' not found in configuration, skipping.")
-            continue
-        
-        algo_config = all_algorithms[algo_name]
-        module_path = algo_config.get("module", "cdlib.algorithms")
-        func_name = algo_config["function"]
-        
-        # Dynamically import the module and get the function
-        try:
-            module = importlib.import_module(module_path)
-            algo_func = getattr(module, func_name)
-        except (ImportError, AttributeError) as e:
-            print(f"Warning: Could not load '{func_name}' from '{module_path}': {e}, skipping '{algo_name}'.")
-            continue
-        
-        algorithms_dict[algo_name] = {
-            "func": algo_func,
-            "params": algo_config.get("params", {}),
-            "metadata": algo_config.get("metadata", {}),
-        }
-    
-    return algorithms_dict
+CONFIG_PATH = "config/dataset_config.yaml"
 
 
-ALGORITHMS_OVERLAPPING = load_algorithms_config()
-
-def main():
-    args = parse_args()
-    num_runs = args.num_runs
-    dataset_name = args.dataset
-
-    tg = load_txt_dataset(
-        file_path=args.dataset_path,
-        source_idx=args.source_idx,
-        target_idx=args.target_idx,
-        batch_range=args.batch_range,
-        initial_fraction=args.initial_fraction,
-        max_steps=args.max_steps,
-        load_full_nodes=args.load_full_nodes,
-        delimiter=args.delimiter,
-        delete_insert_ratio=args.delete_insert_ratio,
+def parse_static_args():
+    parser = argparse.ArgumentParser(
+        description="Static Graph Community Detection Benchmarking"
     )
 
-    print(f"Loaded temporal graph: {len(tg)} snapshots")
-    print(f"Base graph: {tg.base_graph.number_of_nodes()} nodes, {tg.base_graph.number_of_edges()} edges\n")
-    print(f"Average changes per snapshot: {tg.average_changes_per_snapshot():.2f}\n")
+    # Data source (mutually exclusive: file path, built-in, or config)
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument(
+        "--dataset-path", type=str, default=None,
+        help="Path to edge list / CSV / GML file",
+    )
+    source.add_argument(
+        "--builtin", type=str, default=None,
+        help="Load a built-in NetworkX graph (e.g., 'karate')",
+    )
+    source.add_argument(
+        "--config", type=str, default=None,
+        help="Load dataset by name from config/dataset_config.yaml static_graphs section",
+    )
 
-    algorithm_names = ALGORITHMS_OVERLAPPING.keys()
+    # Dataset metadata
+    parser.add_argument(
+        "--dataset", type=str, default="static",
+        help="Dataset name for logging (default: 'static')",
+    )
 
-    runs_bar = tqdm(range(num_runs), total=num_runs, desc="Runs")
-    for run_idx in runs_bar:
-        algorithms_bar = tqdm(
-            algorithm_names, total=len(algorithm_names), desc="Algorithms", leave=False
+    # Edge list parsing
+    parser.add_argument("--source-idx", type=int, default=0, help="Source column index (default: 0)")
+    parser.add_argument("--target-idx", type=int, default=1, help="Target column index (default: 1)")
+    parser.add_argument(
+        "--delimiter", type=str, default=" ",
+        help="Field delimiter (default: space). Use 'tab' for TSV files.",
+    )
+    parser.add_argument(
+        "--preload-fraction", type=float, default=1.0,
+        help="Fraction of edges to load (default: 1.0 = all)",
+    )
+    parser.add_argument(
+        "--ground-truth-attr", type=str, default=None,
+        help="Node attribute for ground truth communities",
+    )
+
+    # Run settings
+    parser.add_argument(
+        "-n", "--num-runs", type=int, default=5,
+        help="Number of runs per algorithm (default: 5)",
+    )
+
+    # Info flags
+    parser.add_argument("--list-builtins", action="store_true", help="List available built-in graphs")
+    parser.add_argument("--list-datasets", action="store_true", help="List static datasets from config")
+
+    return parser.parse_args()
+
+
+def _load_static_config(dataset_key: str) -> dict:
+    """Load a static graph config entry from dataset_config.yaml."""
+    with open(CONFIG_PATH, "r") as f:
+        config = yaml.safe_load(f)
+
+    static_graphs = config.get("static_graphs", {})
+    if dataset_key not in static_graphs:
+        available = ", ".join(sorted(static_graphs.keys())) if static_graphs else "(none defined)"
+        print(f"Error: Static dataset '{dataset_key}' not found. Available: {available}")
+        sys.exit(1)
+
+    return static_graphs[dataset_key]
+
+
+def main() -> None:
+    args = parse_static_args()
+
+    # Info flags
+    if args.list_builtins:
+        print("Available built-in graphs:")
+        for name in sorted(BUILTIN_GRAPHS.keys()):
+            print(f"  {name}")
+        return
+
+    if args.list_datasets:
+        if not os.path.exists(CONFIG_PATH):
+            print(f"Config not found: {CONFIG_PATH}")
+            return
+        with open(CONFIG_PATH, "r") as f:
+            config = yaml.safe_load(f)
+        static_graphs = config.get("static_graphs", {})
+        target = config.get("target_static_datasets", list(static_graphs.keys()))
+        print("Static datasets (from config):")
+        for name in target:
+            entry = static_graphs.get(name, {})
+            path = entry.get("path", "?")
+            print(f"  {name}: {path}")
+        return
+
+    # Load graph
+    if args.builtin:
+        tg = load_builtin_graph(args.builtin)
+        dataset_name = args.dataset if args.dataset != "static" else args.builtin
+    elif args.config:
+        cfg = _load_static_config(args.config)
+        delimiter = cfg.get("delimiter", " ")
+        if delimiter == "tab":
+            delimiter = "\t"
+        tg = load_static_as_temporal(
+            file_path=cfg["path"],
+            source_idx=cfg.get("source_idx", 0),
+            target_idx=cfg.get("target_idx", 1),
+            delimiter=delimiter,
+            preload_fraction=args.preload_fraction,
+            ground_truth_attr=cfg.get("ground_truth_attr"),
         )
-        for algo_name in algorithms_bar:
-            algo_func = ALGORITHMS_OVERLAPPING[algo_name]["func"]
-            algo_params = ALGORITHMS_OVERLAPPING[algo_name]["params"]
-            res = MethodDynamicResults()
-            steps_bar = tqdm(tg.iter_snapshots(), total=len(tg), desc="Steps")
-            for step_idx, snapshot in enumerate(steps_bar):
-                start_time = time.perf_counter()
-                communities: NodeClustering = algo_func(snapshot, **algo_params)
-                elapsed = time.perf_counter() - start_time
+        dataset_name = args.dataset if args.dataset != "static" else cfg.get("dataset_name", args.config)
+    elif args.dataset_path:
+        delimiter = args.delimiter
+        if delimiter == "tab":
+            delimiter = "\t"
+        tg = load_static_as_temporal(
+            file_path=args.dataset_path,
+            source_idx=args.source_idx,
+            target_idx=args.target_idx,
+            delimiter=delimiter,
+            preload_fraction=args.preload_fraction,
+            ground_truth_attr=args.ground_truth_attr,
+        )
+        dataset_name = args.dataset
+    else:
+        print("Error: Provide one of --dataset-path, --builtin, or --config")
+        sys.exit(1)
 
-                q0_modularity = overlapping_modularity_q0(snapshot, communities)
-                cdlib_modularity = evaluation.modularity_overlap(
-                    snapshot, communities
-                ).score
+    # Summary
+    G = tg.base_graph
+    print(f"Static graph: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
+    print(f"Dataset: {dataset_name}")
+    has_gt = tg._ground_truth_clusterings is not None
+    print(f"Ground truth: {'yes' if has_gt else 'no'}")
+    if args.preload_fraction < 1.0:
+        print(f"Preload fraction: {args.preload_fraction}")
+    print()
 
-                intermediate = IntermediateResults(
-                    runtime=elapsed,
-                    cdlib_modularity_overlap=cdlib_modularity,
-                    customize_q0_overlap=q0_modularity,
-                    affected_nodes=snapshot.number_of_nodes(),
-                    num_communities=len(communities.communities),
-                )
-                res.update_intermediate_results(intermediate)
+    # Load algorithms from config — filter to static-only (dynamic algorithms
+    # require temporal steps and don't make sense for a single snapshot)
+    all_algorithms = load_algorithms("config/algorithms.yaml")
+    algorithms = {
+        name: entry for name, entry in all_algorithms.items()
+        if entry["type"] == "static"
+    }
+    skipped = set(all_algorithms.keys()) - set(algorithms.keys())
+    if skipped:
+        print(f"Skipping dynamic algorithms (not applicable to static graphs): {', '.join(sorted(skipped))}")
+        print()
 
-            experiment = Experiment(
-                api_key=os.getenv("COMET_API_KEY"),
-                project_name=f"graph-community-detection-overlapping-{args.dataset.lower()}",
-                workspace=os.getenv("COMET_WORKSPACE"),
+    # Create a namespace-like object for log_results compatibility
+    # log_results expects args with temporal-specific fields; provide sensible defaults
+    class StaticArgs:
+        pass
+
+    static_args = StaticArgs()
+    static_args.dataset = dataset_name
+    static_args.max_steps = 0
+    static_args.batch_range = 0.0
+    static_args.initial_fraction = 1.0
+    static_args.delete_insert_ratio = 0.0
+
+    # Run pipeline
+    for _run_idx in tqdm(range(args.num_runs), desc="Runs"):
+        for algo_name, algo_entry in tqdm(algorithms.items(), desc="Algorithms", leave=False):
+            wrapper = algo_entry["wrapper"]
+            algo_type = algo_entry["type"]
+            clustering_type = algo_entry["clustering_type"]
+            algo_params = algo_entry["params"]
+
+            # Step 1: Run algorithm -> List[NodeClustering] + runtimes
+            clusterings, runtimes = run_algorithm(
+                wrapper, tg, algo_params, algo_type, clustering_type
             )
 
-            # Tag experiment with method and dataset for aggregation
-            experiment.add_tag(algo_name)
-            experiment.add_tag(dataset_name)
+            # Step 2: Evaluate -> MethodDynamicResults
+            results = evaluate(tg, clusterings, clustering_type, runtimes)
 
-            # Log metadata
-            experiment.log_parameters(
-                {
-                    "algorithm": algo_name,
-                    "dataset": dataset_name,
-                    "num_snapshots": len(tg),
-                    "initial_nodes": tg.base_graph.number_of_nodes(),
-                    "initial_edges": tg.base_graph.number_of_edges(),
-                    "max_steps": args.max_steps,
-                    "batch_range": args.batch_range,
-                    "initial_fraction": args.initial_fraction,
-                    "delete_insert_ratio": args.delete_insert_ratio,
-                }
+            # Step 3: Log results
+            log_results(
+                results, algo_name, algo_type, clustering_type,
+                algo_params, tg, static_args,
             )
 
-            # Log summary metrics
-            experiment.log_metrics(
-                {
-                    "avg_runtime": res.avg_runtime,
-                    "total_runtime": res.total_runtime,
-                    "avg_cdlib_modularity_overlap": res.avg_cdlib_modularity_overlap,
-                    "cdlib_modularity_overlap_stability": res.cdlib_modularity_overlap_stability,
-                    "customize_q0_overlap_stability": res.customize_q0_overlap_stability,
-                    "avg_customize_q0_overlap": res.avg_customize_q0_overlap,
-                    "num_steps": len(res.runtimes),
-                }
-            )
-
-            # Log per-step metrics
-            for step, (
-                runtime,
-                cdlib_modularity,
-                customize_q0_modularity,
-                num_communities,
-            ) in enumerate(
-                zip(
-                    res.runtimes,
-                    res.cdlib_modularity_overlap_trace,
-                    res.customize_q0_overlap_trace,
-                    res.num_communities,
-                )
-            ):
-                experiment.log_metrics(
-                    {
-                        "runtime": runtime,
-                        "cdlib_modularity": cdlib_modularity,
-                        "customize_q0_modularity": customize_q0_modularity,
-                        "num_communities": num_communities,
-                    },
-                    step=step,
-                )
-
-            experiment.end()
-
+            # Print summary
             print(f"{algo_name}:")
-            print(f"  steps: {len(res.runtimes)}")
-            print(f"  avg_runtime: {res.avg_runtime:.4f}s")
-            print(
-                f"  avg_cdlib_modularity_overlap: {res.avg_cdlib_modularity_overlap:.4f}"
-            )
-            print(f"  avg_customize_q0_overlap: {res.avg_customize_q0_overlap:.4f}")
+            print(f"  nodes: {G.number_of_nodes()}, edges: {G.number_of_edges()}")
+            print(f"  runtime: {results.avg_runtime:.4f}s")
+            print(f"  cdlib_modularity_overlap: {results.avg_cdlib_modularity_overlap:.4f}")
+            print(f"  customize_q0_overlap: {results.avg_customize_q0_overlap:.4f}")
+            if results.nmi_trace:
+                print(f"  nmi: {results.avg_nmi:.4f}")
             print()
 
 

@@ -7,6 +7,7 @@ This project targets Python 3.10+ and uses Comet ML for experiment logging.
 - Python 3.10 or newer
 - `pip`
 - Git
+- `jq` for `scripts/benchmark.sh`
 
 ## Setup
 
@@ -47,7 +48,6 @@ Current pinned dependencies include:
 - `numpy`
 - `tqdm`
 - `dynetx`
-- `torch`
 - `scipy`
 - `matplotlib`
 - `pyyaml`
@@ -73,6 +73,7 @@ COMET_WORKSPACE=your_workspace_here
 
 ```bash
 python main.py --help
+python main_static.py --help
 ```
 
 You can also verify imports directly:

@@ -8,7 +8,7 @@ from src.algorithms.base import CommunityDetectionAlgorithm
 from src.evaluations.metrics import compute_modularity
 from src.factory.communities import IntermediateResults, MethodDynamicResults
 from src.factory.factory import TemporalGraph
-from src.models.base import LouvainMixin
+from src.models.common.louvain_base import LouvainMixin
 
 
 class DynamicFrontierLouvain(CommunityDetectionAlgorithm, LouvainMixin):

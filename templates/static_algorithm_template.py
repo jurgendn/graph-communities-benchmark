@@ -3,8 +3,8 @@ Static Algorithm Template
 =========================
 
 Copy this file to:
-  src/models/static_methods/overlap/your_algorithm.py   (for overlapping)
-  src/models/static_methods/crisp/your_algorithm.py     (for crisp)
+  src/models/static/overlap/your_algorithm.py   (for overlapping)
+  src/models/static/crisp/your_algorithm.py     (for crisp)
 
 Then:
   1. Rename the class (YourStaticAlgorithm → something meaningful).
@@ -94,16 +94,15 @@ class YourStaticAlgorithm(CommunityDetectionAlgorithm):
 # config/algorithms.yaml registration snippet
 # ----------------------------------------------------------------------
 #
-# Add the following block under `algorithms:` in config/algorithms.yaml,
-# then add your algorithm name to `target_algorithms:` to enable it.
+# Add the following block under `snapshot_algorithms:` in config/algorithms.yaml,
+# then add your algorithm name to `target_snapshot_algorithms:` to enable it.
 #
 # your_algorithm:
-#   module: "src.models.static_methods.overlap.your_algorithm"  # adjust path
+#   module: "src.models.static.overlap.your_algorithm"  # adjust path
 #   function: "YourStaticAlgorithm"
 #   params:
 #     param1: 0.5
 #     param2: 10
-#   type: "static"
 #   clustering_type: "overlapping"   # or "crisp"
 #   metadata: {}
 #   description: "Short description of your algorithm"

@@ -10,11 +10,12 @@ class TemporalChanges(BaseModel):
 
 
 class TemporalGraph:
-    def __init__(self, base_graph: nx.Graph, steps: List[TemporalChanges]):
+    def __init__(self, base_graph: nx.Graph, steps: List[TemporalChanges], _ground_truth_clusterings: List = None):
         self.base_graph = base_graph
         self.steps = steps
         # cached_snapshots[i] is snapshot at time i
         self.cached_snapshots: List[nx.Graph] = [base_graph.copy()]
+        self._ground_truth_clusterings = _ground_truth_clusterings
 
     def num_steps(self) -> int:
         return len(self.steps)

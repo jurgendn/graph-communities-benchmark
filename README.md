@@ -1,6 +1,6 @@
 # Graph Communities Benchmark
 
-A benchmarking framework for temporal graph community detection. The project evaluates both overlapping and crisp methods on evolving networks, logs runs to Comet ML, and provides a plotting pipeline for cross-dataset comparisons.
+A benchmarking framework for dynamic and static community detection. The project evaluates overlapping and crisp methods on temporal graphs, static graphs, and labeled LFR snapshots, logs runs to Comet ML, and provides a plotting pipeline for cross-dataset comparisons.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -8,9 +8,10 @@ A benchmarking framework for temporal graph community detection. The project eva
 ## What It Does
 
 - Build temporal snapshots from edge-list datasets.
+- Treat static graphs as one-snapshot `TemporalGraph` objects.
 - Run static algorithms snapshot-by-snapshot and dynamic algorithms on the full temporal graph.
 - Evaluate crisp and overlapping outputs with the appropriate modularity metric.
-- Optionally evaluate against ground truth on LFR-style GraphML snapshots.
+- Optionally evaluate against ground truth on LFR-style `.gml` snapshots and supported static graphs.
 - Log per-run and per-step metrics to Comet ML.
 - Fetch, merge, and plot experiment results into grouped comparison figures.
 
@@ -25,11 +26,11 @@ A benchmarking framework for temporal graph community detection. The project eva
 | [Visualization Guide](docs/visualization.md) | Fetching Comet runs and generating plots |
 | [Development Guide](docs/development_guide.md) | Adding algorithms, datasets, and metrics |
 
-## Supported Modes
+## Algorithm Layout
 
-### Static algorithms
+### Snapshot algorithms
 
-Configured in [`config/algorithms.yaml`](config/algorithms.yaml) and executed once per snapshot through the unified wrapper layer.
+Configured in the `snapshot_algorithms` section of [`config/algorithms.yaml`](config/algorithms.yaml) and executed once per snapshot through the wrapper layer. These can run in both the temporal benchmark and the static benchmark.
 
 Common configured examples:
 
@@ -42,7 +43,7 @@ Common configured examples:
 - `big_clam`
 - `demon`
 
-### Dynamic algorithms
+### Temporal algorithms
 
 Algorithms that consume the full `TemporalGraph`:
 
@@ -54,7 +55,7 @@ Algorithms that consume the full `TemporalGraph`:
 - `crisp`: one community per node; evaluated with Newman-Girvan modularity.
 - `overlapping`: multiple communities per node; evaluated with CDlib overlap modularity plus custom Q0 modularity.
 
-The mode is controlled by each algorithm's `type` and `clustering_type` in [`config/algorithms.yaml`](config/algorithms.yaml).
+The execution style is controlled by which section an algorithm appears in (`snapshot_algorithms` or `temporal_algorithms`) plus its `clustering_type` in [`config/algorithms.yaml`](config/algorithms.yaml).
 
 ## Quick Start
 
@@ -79,7 +80,7 @@ COMET_API_KEY=your_api_key_here
 COMET_WORKSPACE=your_workspace_here
 ```
 
-### 3. Run a benchmark
+### 3. Run a dynamic benchmark
 
 ```bash
 python main.py \
@@ -92,20 +93,45 @@ python main.py \
   --max-steps 10
 ```
 
-Or use the dataset config wrapper:
+Or use the dataset-config wrapper:
 
 ```bash
 ./scripts/benchmark.sh --list
 ./scripts/benchmark.sh college-msg main.py
 ```
 
-### 4. Generate plots
+### 4. Run a static benchmark
+
+From a file:
+
+```bash
+python main_static.py \
+  --dataset-path ./data/karate.txt \
+  --dataset karate \
+  --source-idx 0 \
+  --target-idx 1
+```
+
+From static dataset config:
+
+```bash
+./scripts/benchmark_static.sh --list
+./scripts/benchmark_static.sh karate 1
+```
+
+From a built-in graph with ground truth:
+
+```bash
+python main_static.py --builtin karate --num-runs 1
+```
+
+### 5. Generate plots
 
 ```bash
 ./scripts/plot.sh
 ```
 
-See [Quick Start](docs/quick_start.md) for more examples, including LFR input.
+See [Quick Start](docs/quick_start.md) for more examples, including LFR input and static datasets from config.
 
 ## CLI Highlights
 
@@ -123,6 +149,21 @@ See [Quick Start](docs/quick_start.md) for more examples, including LFR input.
 - `--lfr-folder`
 - `--ground-truth-attr`
 
+`main_static.py` accepts these commonly used options:
+
+- `--dataset-path`
+- `--dataset`
+- `--config`
+- `--builtin`
+- `--source-idx`
+- `--target-idx`
+- `--delimiter`
+- `--preload-fraction`
+- `--ground-truth-attr`
+- `--num-runs`
+- `--list-datasets`
+- `--list-builtins`
+
 Show the full help with:
 
 ```bash
@@ -135,7 +176,6 @@ python main.py --help
 graph-communities-benchmark/
 |- main.py
 |- main_static.py
-|- main_dynamic.py
 |- config/
 |  |- algorithms.yaml
 |  |- dataset_config.yaml
@@ -153,6 +193,9 @@ graph-communities-benchmark/
    |- evaluations/
    |- factory/
    |- models/
+   |  |- common/
+   |  |- dynamic/
+   |  `- static/
    |- utils/
    `- visualization/
 ```
@@ -180,7 +223,10 @@ Note: `data/`, `experiments/`, and `assets/` are gitignored in this repository.
 
 ## Notes
 
-- The unified path is `main.py`; `main_static.py` and `main_dynamic.py` remain for compatibility.
+- `main.py` is the temporal and LFR entry point; it can run both snapshot and temporal algorithms.
+- `main_static.py` is the static entry point.
+- Static graphs reuse the same evaluation and logging pipeline by loading as `TemporalGraph(base_graph=G, steps=[])`.
+- Shared model code lives under `src/models/common/`; algorithm implementations live under `src/models/static/` and `src/models/dynamic/`.
 - Some CDlib algorithms may require optional third-party packages beyond `requirements.txt`.
 - The `.env.example` file includes `COMET_PROJECT_NAME`, but current benchmark runs derive the Comet project name from the dataset automatically.
 

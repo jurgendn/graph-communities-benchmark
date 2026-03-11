@@ -55,13 +55,7 @@ def main() -> None:
         f"Base graph: {tg.base_graph.number_of_nodes()} nodes, "
         f"{tg.base_graph.number_of_edges()} edges"
     )
-    
-    # Check for ground truth
-    ground_truth_attr = None
-    if args.lfr_folder and hasattr(tg, '_ground_truth_attr'):
-        ground_truth_attr = tg._ground_truth_attr
-        print(f"Ground truth attribute: {ground_truth_attr}")
-    
+
     print(f"Average changes per snapshot: {tg.average_changes_per_snapshot():.2f}\n")
 
     # Load algorithms from config
@@ -82,8 +76,7 @@ def main() -> None:
 
             # Step 2: Evaluate → MethodDynamicResults
             results = evaluate(
-                tg, clusterings, clustering_type, runtimes, 
-                ground_truth_attr=ground_truth_attr
+                tg, clusterings, clustering_type, runtimes
             )
 
             # Step 3: Log results

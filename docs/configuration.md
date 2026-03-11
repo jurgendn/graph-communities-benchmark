@@ -7,28 +7,29 @@ The repository uses YAML files under `config/` to define algorithms, datasets, a
 | File | Purpose |
 | --- | --- |
 | [`config/algorithms.yaml`](../config/algorithms.yaml) | Which algorithms run and how they are loaded |
-| [`config/dataset_config.yaml`](../config/dataset_config.yaml) | Named datasets and their temporal graph parameters |
+| [`config/dataset_config.yaml`](../config/dataset_config.yaml) | Named temporal, LFR, and static datasets |
 | [`config/visualization.yaml`](../config/visualization.yaml) | Comet projects, metric keys, and plot styling |
 
 ## `config/algorithms.yaml`
 
-This file drives `main.py` through [`src/algorithms/factory.py`](../src/algorithms/factory.py).
+This file drives both [`main.py`](../main.py) and [`main_static.py`](../main_static.py) through [`src/algorithms/factory.py`](../src/algorithms/factory.py).
 
 ### Structure
 
 ```yaml
-target_algorithms:
+target_snapshot_algorithms:
   - coach
   - core_expansion
   - graph_entropy
-  - df_louvain
 
-algorithms:
+target_temporal_algorithms:
+  - tiles
+
+snapshot_algorithms:
   coach:
     module: "cdlib.algorithms"
     function: "coach"
     params: {}
-    type: "static"
     clustering_type: "overlapping"
     metadata: {}
     description: "COACH"
@@ -38,43 +39,50 @@ algorithms:
 
 | Field | Meaning |
 | --- | --- |
-| `target_algorithms` | Ordered list of algorithms to execute |
+| `target_snapshot_algorithms` | Ordered list of per-snapshot algorithms to execute |
+| `target_temporal_algorithms` | Ordered list of full-temporal-graph algorithms to execute |
+| `snapshot_algorithms` | Definitions for snapshot-by-snapshot algorithms |
+| `temporal_algorithms` | Definitions for full-temporal-graph algorithms |
 | `module` | Python import path |
 | `function` | Function or class loaded from that module |
 | `params` | Keyword args passed to the function or constructor |
-| `type` | `static` or `dynamic` |
 | `clustering_type` | `crisp` or `overlapping` |
 | `description` | Human-readable label |
 
 ### Behavior
 
-- Static functions are wrapped and called once per snapshot.
-- Dynamic functions consume the full `TemporalGraph`.
-- If `function` points to a class, the loader handles class instantiation or direct wrapping depending on the class type.
+- Snapshot algorithms are wrapped and called once per snapshot; they can be used in both `main.py` and `main_static.py`.
+- Temporal algorithms consume the full `TemporalGraph`; they are only meaningful in `main.py`.
+- The `module` field usually points either to `cdlib.algorithms` or to an implementation under `src/models/`.
 
 ### Current defaults
 
-At the moment, the default `target_algorithms` list is:
+At the moment, the default target lists are:
 
 ```yaml
-target_algorithms:
+target_snapshot_algorithms:
   - coach
   - core_expansion
   - graph_entropy
-  - df_louvain
+
+target_temporal_algorithms:
+  - tiles
 ```
 
-Change that list to choose what `main.py` runs.
+Change those lists to choose what runs. `main.py` loads both sections; `main_static.py` only executes snapshot algorithms.
 
 ## `config/dataset_config.yaml`
 
-This file is consumed primarily by `scripts/benchmark.sh`.
+This file is consumed by `scripts/benchmark.sh`, `scripts/benchmark_static.sh`, and `main_static.py --config`.
 
 ### Structure
 
 ```yaml
 target_datasets:
   - college-msg
+
+target_static_datasets:
+  - karate
 
 common: &common_settings
   max_steps: 9
@@ -89,6 +97,14 @@ datasets:
     target_idx: 1
     delimiter: " "
     <<: *common_settings
+
+static_graphs:
+  karate:
+    path: data/karate.txt
+    dataset_name: karate
+    source_idx: 0
+    target_idx: 1
+    delimiter: " "
 ```
 
 ### Important fields
@@ -96,18 +112,64 @@ datasets:
 | Field | Meaning |
 | --- | --- |
 | `target_datasets` | Datasets shown by `./scripts/benchmark.sh --list` and used by `--all` |
+| `target_static_datasets` | Datasets shown by `./scripts/benchmark_static.sh --list` and used by static `--all` |
 | `path` | Local dataset file path |
 | `dataset_name` | Label sent to logs and CLI output |
+| `type` | `edge_list` or `lfr` for temporal config entries |
 | `source_idx` | Source column index |
 | `target_idx` | Target column index |
 | `delimiter` | Field separator |
 | `max_steps` | Maximum number of temporal updates |
 | `initial_fraction` | Fraction of rows used to form the base graph |
 | `batch_range` | Fraction of total edges assigned to each temporal batch |
+| `ground_truth_attr` | Node attribute used to build ground truth when available |
+
+### Dataset sections
+
+- `datasets`: temporal edge-list and LFR benchmarks used by `main.py`
+- `static_graphs`: static graph inputs used by `main_static.py`
+
+### Temporal dataset types
+
+Temporal entries use an explicit `type` field:
+
+- `edge_list`: one file converted into a temporal graph through batching
+- `lfr`: folder of `snapshot_t*.gml` files diffed into temporal steps
+
+Example:
+
+```yaml
+datasets:
+  synthetic-n-5000-1:
+    dataset_name: synthetic_n_5000_1
+    path: data/synthetic_n_5000_1/
+    type: "lfr"
+    ground_truth_attr: "communities"
+    source_idx: 0
+    target_idx: 1
+    delimiter: " "
+```
+
+### Static graph entries
+
+Static entries do not need a `type` because they are always loaded through `main_static.py` as one-snapshot temporal graphs.
+
+Example:
+
+```yaml
+static_graphs:
+  karate:
+    dataset_name: karate
+    path: data/karate.txt
+    delimiter: " "
+    source_idx: 0
+    target_idx: 1
+```
 
 ### Notes
 
-- `scripts/benchmark.sh` parses this file with shell text processing, so keep the formatting simple.
+- `scripts/benchmark.sh` reads `datasets` through `scripts/parse_config.py`.
+- `scripts/benchmark_static.sh` reads `static_graphs` directly from YAML.
 - Values in `common` are reused through YAML anchors.
 - Paths under `data/` refer to local files; the repository does not track the data directory.
 
@@ -166,11 +228,15 @@ python -c "import yaml; yaml.safe_load(open('config/algorithms.yaml')); yaml.saf
 
 ### Run fewer algorithms
 
-Edit `target_algorithms` in [`config/algorithms.yaml`](../config/algorithms.yaml).
+Edit `target_snapshot_algorithms` and `target_temporal_algorithms` in [`config/algorithms.yaml`](../config/algorithms.yaml).
 
 ### Run different datasets with the shell wrapper
 
 Edit `target_datasets` in [`config/dataset_config.yaml`](../config/dataset_config.yaml).
+
+### Run different static datasets with the static shell wrapper
+
+Edit `target_static_datasets` in [`config/dataset_config.yaml`](../config/dataset_config.yaml).
 
 ### Plot different algorithms or projects
 

@@ -6,7 +6,7 @@ from cdlib import NodeClustering
 from networkx.algorithms.community import modularity
 
 from src.factory.sampler import SelectiveSampler
-from src.models.utils.helpers import convert_dict_communities_to_cdlib
+from src.models.common.helpers import convert_dict_communities_to_cdlib
 
 
 class LouvainMixin:
@@ -35,7 +35,6 @@ class LouvainMixin:
         if initial_communities is not None:
             communities_dict = initial_communities
         else:
-            # Initialize communities using networkx louvain_communities
             communities_list = nx.algorithms.community.louvain_communities(self.graph, seed=42)
             communities_dict = {}
             for community_id, community_nodes in enumerate(communities_list):
@@ -139,7 +138,6 @@ class LouvainMixin:
         communities_dict = {
             self.nodes[i]: self.community[i] for i in range(len(self.nodes))
         }
-        # Convert communities_dict to list of sets for modularity calculation
         communities = {}
         for node, community_id in communities_dict.items():
             if community_id not in communities:
@@ -149,7 +147,6 @@ class LouvainMixin:
         return modularity(self.graph, communities_list)
 
     def get_communities_dict(self) -> Dict[int, set]:
-        """Return communities as a dictionary mapping community_id -> set(nodes)."""
         from collections import defaultdict
 
         communities = defaultdict(set)
@@ -158,7 +155,6 @@ class LouvainMixin:
         return dict(communities)
 
     def get_communities(self) -> NodeClustering:
-        """Return communities as a NodeClustering object."""
         communities_dict = self.get_communities_dict()
         return convert_dict_communities_to_cdlib(self.graph, communities_dict)
 
