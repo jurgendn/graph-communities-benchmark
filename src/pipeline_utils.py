@@ -38,7 +38,7 @@ def run_algorithm(
         wrapper: Algorithm wrapper (StaticMethodWrapper, DynamicMethodWrapper, 
                  or CommunityDetectionAlgorithm class/instance)
         tg: TemporalGraph with snapshots
-        params: Algorithm parameters
+    params: Algorithm parameters (kept for logging compatibility)
         algo_type: "static" or "dynamic"
         clustering_type: "crisp" or "overlapping"
     
@@ -47,10 +47,11 @@ def run_algorithm(
     """
     runtimes = []
     
-    # Use the wrapper's __call__ method to get results
-    # The wrapper handles iteration for static methods
+    # Wrappers are instantiated with their algorithm params in
+    # src.algorithms.factory.load_algorithms(), so the unified interface here is
+    # always wrapper(tg).
     start_total = time.perf_counter()
-    result = wrapper(tg, **params)
+    result = wrapper(tg)
     elapsed_total = time.perf_counter() - start_total
     
     if algo_type == "static":
@@ -162,17 +163,19 @@ def log_results(
     """
     experiment = Experiment(
         api_key=os.getenv("COMET_API_KEY"),
-        project_name=f"graph-community-detection-overlapping-{args.dataset.lower()}",
+        project_name=f"graph-community-detection-{getattr(args, 'benchmark_mode', 'dynamic')}-{args.dataset.lower()}",
         workspace=os.getenv("COMET_WORKSPACE"),
     )
 
     experiment.add_tag(algo_name)
     experiment.add_tag(args.dataset)
+    experiment.add_tag(getattr(args, "benchmark_mode", "dynamic"))
 
     # Base parameters
     params_to_log = {
         "algorithm": algo_name,
         "dataset": args.dataset,
+        "benchmark_mode": getattr(args, "benchmark_mode", "dynamic"),
         "algorithm_type": algo_type,
         "clustering_type": clustering_type,
         "num_snapshots": len(tg),
@@ -182,6 +185,7 @@ def log_results(
         "batch_range": args.batch_range,
         "initial_fraction": args.initial_fraction,
         "delete_insert_ratio": args.delete_insert_ratio,
+        "preload_fraction": getattr(args, "preload_fraction", None),
     }
     # Algorithm hyperparameters
     params_to_log.update(algo_params)

@@ -106,7 +106,11 @@ Check that `.env` contains valid `COMET_API_KEY` and `COMET_WORKSPACE` values.
 
 ### Missing datasets
 
-Make sure the files referenced by [`config/dataset_config.yaml`](../config/dataset_config.yaml) exist locally under `data/`.
+Make sure the files referenced by [`config/dynamic_dataset_config.yaml`](../config/dynamic_dataset_config.yaml) and [`config/static_dataset_config.yaml`](../config/static_dataset_config.yaml) exist locally under `data/`.
+
+### Plot pipeline configuration
+
+Dynamic plots read [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml), and static plots read [`config/visualization_static.yaml`](../config/visualization_static.yaml).
 
 ## Next Step
 

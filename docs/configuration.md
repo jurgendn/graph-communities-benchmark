@@ -7,8 +7,10 @@ The repository uses YAML files under `config/` to define algorithms, datasets, a
 | File | Purpose |
 | --- | --- |
 | [`config/algorithms.yaml`](../config/algorithms.yaml) | Which algorithms run and how they are loaded |
-| [`config/dataset_config.yaml`](../config/dataset_config.yaml) | Named temporal, LFR, and static datasets |
-| [`config/visualization.yaml`](../config/visualization.yaml) | Comet projects, metric keys, and plot styling |
+| [`config/dynamic_dataset_config.yaml`](../config/dynamic_dataset_config.yaml) | Named temporal and LFR datasets |
+| [`config/static_dataset_config.yaml`](../config/static_dataset_config.yaml) | Named static graph datasets |
+| [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml) | Dynamic benchmark visualization settings |
+| [`config/visualization_static.yaml`](../config/visualization_static.yaml) | Static benchmark visualization settings |
 
 ## `config/algorithms.yaml`
 
@@ -71,18 +73,15 @@ target_temporal_algorithms:
 
 Change those lists to choose what runs. `main.py` loads both sections; `main_static.py` only executes snapshot algorithms.
 
-## `config/dataset_config.yaml`
+## `config/dynamic_dataset_config.yaml`
 
-This file is consumed by `scripts/benchmark.sh`, `scripts/benchmark_static.sh`, and `main_static.py --config`.
+This file is consumed by `scripts/benchmark.sh` and `scripts/parse_config.py`.
 
 ### Structure
 
 ```yaml
 target_datasets:
   - college-msg
-
-target_static_datasets:
-  - karate
 
 common: &common_settings
   max_steps: 9
@@ -97,14 +96,6 @@ datasets:
     target_idx: 1
     delimiter: " "
     <<: *common_settings
-
-static_graphs:
-  karate:
-    path: data/karate.txt
-    dataset_name: karate
-    source_idx: 0
-    target_idx: 1
-    delimiter: " "
 ```
 
 ### Important fields
@@ -112,7 +103,6 @@ static_graphs:
 | Field | Meaning |
 | --- | --- |
 | `target_datasets` | Datasets shown by `./scripts/benchmark.sh --list` and used by `--all` |
-| `target_static_datasets` | Datasets shown by `./scripts/benchmark_static.sh --list` and used by static `--all` |
 | `path` | Local dataset file path |
 | `dataset_name` | Label sent to logs and CLI output |
 | `type` | `edge_list` or `lfr` for temporal config entries |
@@ -124,10 +114,9 @@ static_graphs:
 | `batch_range` | Fraction of total edges assigned to each temporal batch |
 | `ground_truth_attr` | Node attribute used to build ground truth when available |
 
-### Dataset sections
+### Dataset section
 
 - `datasets`: temporal edge-list and LFR benchmarks used by `main.py`
-- `static_graphs`: static graph inputs used by `main_static.py`
 
 ### Temporal dataset types
 
@@ -150,15 +139,28 @@ datasets:
     delimiter: " "
 ```
 
-### Static graph entries
+### Notes
 
-Static entries do not need a `type` because they are always loaded through `main_static.py` as one-snapshot temporal graphs.
+- `scripts/benchmark.sh` reads `datasets` through `scripts/parse_config.py`.
+- Values in `common` are reused through YAML anchors.
+- Paths under `data/` refer to local files; the repository does not track the data directory.
 
-Example:
+## `config/static_dataset_config.yaml`
+
+This file is consumed by `main_static.py --config` and `scripts/benchmark_static.sh`.
+
+### Structure
 
 ```yaml
-static_graphs:
+target_datasets:
+  - karate
+
+common: &common_settings
+  preload_fraction: 1.0
+
+datasets:
   karate:
+    <<: *common_settings
     dataset_name: karate
     path: data/karate.txt
     delimiter: " "
@@ -166,28 +168,95 @@ static_graphs:
     target_idx: 1
 ```
 
+### Important fields
+
+| Field | Meaning |
+| --- | --- |
+| `target_datasets` | Datasets shown by `./scripts/benchmark_static.sh --list` and used by static `--all` |
+| `path` | Local dataset file path |
+| `dataset_name` | Label sent to logs and CLI output |
+| `type` | `edge_list` or `lfr` for static config entries |
+| `source_idx` | Source column index |
+| `target_idx` | Target column index |
+| `delimiter` | Field separator |
+| `preload_fraction` | Fraction of edges loaded into the single static snapshot |
+| `ground_truth_attr` | Node attribute used to build ground truth when available |
+
+### Static dataset types
+
+Static entries may use:
+
+- `edge_list`: load one file as a single static graph
+- `lfr`: load one labeled `snapshot_t*.gml` file from a folder as the single static graph
+
+Example:
+
+```yaml
+datasets:
+  synthetic-n-5000-1:
+    dataset_name: synthetic_n_5000_1
+    path: data/synthetic_n_5000_1/
+    type: "lfr"
+    ground_truth_attr: "communities"
+```
+
 ### Notes
 
-- `scripts/benchmark.sh` reads `datasets` through `scripts/parse_config.py`.
-- `scripts/benchmark_static.sh` reads `static_graphs` directly from YAML.
+- `scripts/benchmark_static.sh` reads `datasets` from this file.
 - Values in `common` are reused through YAML anchors.
 - Paths under `data/` refer to local files; the repository does not track the data directory.
+- For `type: lfr`, static benchmarking uses the first available snapshot as one static graph; it does not reconstruct temporal steps.
 
-## `config/visualization.yaml`
+## Synthetic LFR naming convention
 
-This file controls the Comet fetch/merge/plot pipeline.
+For generated LFR datasets, prefer concise names that preserve the main structural parameters:
+
+```text
+synthetic-n-<nodes>-k<avg_degree>-mu<mixing>-c<min>-<max>
+```
+
+Example:
+
+```text
+synthetic-n-10000-k4-mu0.1-c50-200
+```
+
+Recommended interpretation:
+
+- `n-10000`: number of nodes
+- `k4`: target average degree
+- `mu0.1`: LFR mixing parameter
+- `c50-200`: community size range
+
+## `config/visualization_dynamic.yaml` and `config/visualization_static.yaml`
+
+These files control the Comet fetch/merge/plot pipeline for each benchmark mode.
 
 ### Top-level keys used in code
 
 | Key | Used for |
 | --- | --- |
-| `raw_dir` | Raw Comet export location |
-| `merge_dir` | Merged metric location |
-| `output_dir` | Plot output location |
 | `workspace` | Default Comet workspace |
+| `directories` | Raw, merged, and output locations for the selected mode |
+| `hyperparameters` | Hyperparameter keys inspected during merging |
+| `metric_keys` | Metrics fetched from Comet |
+| `projects` | Comet project names to fetch |
+| `use_batch_ranges` | Whether merged outputs are grouped by batch range |
+| `plotter` | Dataset grouping and algorithm styling |
+
+### Shared structure
+
+Both files use the same schema:
+
+| Key | Meaning |
+| --- | --- |
+| `directories.raw_dir` | Raw Comet export location |
+| `directories.merge_dir` | Merged metric location |
+| `directories.output_dir` | Plot output location |
 | `hyperparameters` | Hyperparameter keys to inspect during merging |
 | `metric_keys` | Metrics fetched from Comet |
 | `projects` | Comet project names to fetch |
+| `use_batch_ranges` | Whether merged outputs are grouped by batch range |
 | `plotter` | Dataset grouping and algorithm styling |
 
 ### Metric keys
@@ -221,7 +290,7 @@ Those values are read by the visualization helpers in [`src/visualization/config
 Check YAML syntax before running long jobs:
 
 ```bash
-python -c "import yaml; yaml.safe_load(open('config/algorithms.yaml')); yaml.safe_load(open('config/dataset_config.yaml')); yaml.safe_load(open('config/visualization.yaml')); print('ok')"
+python -c "import yaml; yaml.safe_load(open('config/algorithms.yaml')); yaml.safe_load(open('config/dynamic_dataset_config.yaml')); yaml.safe_load(open('config/static_dataset_config.yaml')); yaml.safe_load(open('config/visualization_dynamic.yaml')); yaml.safe_load(open('config/visualization_static.yaml')); print('ok')"
 ```
 
 ## Common Changes
@@ -232,12 +301,12 @@ Edit `target_snapshot_algorithms` and `target_temporal_algorithms` in [`config/a
 
 ### Run different datasets with the shell wrapper
 
-Edit `target_datasets` in [`config/dataset_config.yaml`](../config/dataset_config.yaml).
+Edit `target_datasets` in [`config/dynamic_dataset_config.yaml`](../config/dynamic_dataset_config.yaml).
 
 ### Run different static datasets with the static shell wrapper
 
-Edit `target_static_datasets` in [`config/dataset_config.yaml`](../config/dataset_config.yaml).
+Edit `target_datasets` in [`config/static_dataset_config.yaml`](../config/static_dataset_config.yaml).
 
 ### Plot different algorithms or projects
 
-Edit `projects`, `selected_algorithms`, `methods_name`, and `colors` in [`config/visualization.yaml`](../config/visualization.yaml).
+Edit [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml) or [`config/visualization_static.yaml`](../config/visualization_static.yaml), especially `projects`, `directories`, `selected_algorithms`, `methods_name`, and `colors`.

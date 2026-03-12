@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from src.visualization.config import ConfigManager
+from src.visualization.config import ConfigManager, DEFAULT_MODE
 
 
 def load_metric_file(path: Path) -> Dict:
@@ -80,24 +80,25 @@ def aggregate_series(runs: List[List[dict]]) -> Dict[float, List[float]]:
 
 
 # Configuration accessors (cached)
-_config_cache = None
-
-def _get_config() -> Dict:
-    """Get config (cached)."""
-    global _config_cache
-    if _config_cache is None:
-        _config_cache = ConfigManager().get()
-    return _config_cache
+_config_manager = None
 
 
-def get_plotter_config() -> Dict:
+def _get_manager() -> ConfigManager:
+    """Get config manager (cached)."""
+    global _config_manager
+    if _config_manager is None:
+        _config_manager = ConfigManager()
+    return _config_manager
+
+
+def get_plotter_config(benchmark_type: str = DEFAULT_MODE) -> Dict:
     """Get plotter config section."""
-    return _get_config().get("plotter", {})
+    return _get_manager().plotter(benchmark_type)
 
 
-def get_algorithm_info() -> Dict:
+def get_algorithm_info(benchmark_type: str = DEFAULT_MODE) -> Dict:
     """Get algorithm styling info (names, colors, markers, order)."""
-    cfg = get_plotter_config()
+    cfg = get_plotter_config(benchmark_type)
     common = cfg.get("common_plotter_settings", {})
     return {
         "names": common.get("methods_name", {}),
@@ -108,49 +109,56 @@ def get_algorithm_info() -> Dict:
     }
 
 
-def algorithm_display_name(alg: str) -> str:
+def algorithm_display_name(alg: str, benchmark_type: str = DEFAULT_MODE) -> str:
     """Get display name for algorithm."""
-    info = get_algorithm_info()
+    info = get_algorithm_info(benchmark_type)
     return info.get("names", {}).get(alg, alg)
 
 
-def algorithm_color(alg: str) -> Optional[str]:
+def algorithm_color(alg: str, benchmark_type: str = DEFAULT_MODE) -> Optional[str]:
     """Get color for algorithm."""
-    info = get_algorithm_info()
+    info = get_algorithm_info(benchmark_type)
     return info.get("colors", {}).get(alg)
 
 
-def algorithm_marker(alg: str) -> Optional[str]:
+def algorithm_marker(alg: str, benchmark_type: str = DEFAULT_MODE) -> Optional[str]:
     """Get marker for algorithm."""
-    info = get_algorithm_info()
+    info = get_algorithm_info(benchmark_type)
     return info.get("markers", {}).get(alg)
 
 
-def get_dataset_info() -> Dict:
+def get_dataset_info(benchmark_type: str = DEFAULT_MODE) -> Dict:
     """Get synthetic/real-world dataset info."""
-    cfg = get_plotter_config()
+    cfg = get_plotter_config(benchmark_type)
     common = cfg.get("common_plotter_settings", {})
     return {
         "synthetic": common.get("synthetic_datasets", []),
         "real_world": common.get("real_world_datasets", []),
         "name_mapping": common.get("projects_name_mapping", {}),
+        "metric_name_mapping": common.get("metric_name_mapping", {}),
     }
 
 
-def project_display_name(project: str) -> str:
+def project_display_name(project: str, benchmark_type: str = DEFAULT_MODE) -> str:
     """Get display name for project."""
-    info = get_dataset_info()
+    info = get_dataset_info(benchmark_type)
     return info.get("name_mapping", {}).get(project, project)
 
 
-def get_selected_algorithms() -> List[str]:
+def metric_display_name(metric: str, benchmark_type: str = DEFAULT_MODE) -> str:
+    """Get display name for metric."""
+    info = get_dataset_info(benchmark_type)
+    return info.get("metric_name_mapping", {}).get(metric, metric)
+
+
+def get_selected_algorithms(benchmark_type: str = DEFAULT_MODE) -> List[str]:
     """Get selected algorithms from config."""
-    return get_algorithm_info().get("selected", [])
+    return get_algorithm_info(benchmark_type).get("selected", [])
 
 
-def sort_and_filter_algorithms(algs: List[str]) -> List[str]:
+def sort_and_filter_algorithms(algs: List[str], benchmark_type: str = DEFAULT_MODE) -> List[str]:
     """Sort algorithms by config order and filter to selected ones."""
-    info = get_algorithm_info()
+    info = get_algorithm_info(benchmark_type)
     order = info.get("order", [])
     selected = info.get("selected", [])
 

@@ -117,6 +117,7 @@ From static dataset config:
 ```bash
 ./scripts/benchmark_static.sh --list
 ./scripts/benchmark_static.sh karate 1
+./scripts/benchmark_static.sh synthetic-n-5000-1 1
 ```
 
 From a built-in graph with ground truth:
@@ -129,6 +130,20 @@ python main_static.py --builtin karate --num-runs 1
 
 ```bash
 ./scripts/plot.sh
+```
+
+Or target one benchmark mode:
+
+```bash
+./scripts/plot.sh dynamic
+./scripts/plot.sh static
+```
+
+Manual equivalents:
+
+```bash
+PYTHONPATH=. python tools/fetch_and_merge.py --benchmark-type dynamic
+PYTHONPATH=. python tools/plots.py --benchmark-type dynamic
 ```
 
 See [Quick Start](docs/quick_start.md) for more examples, including LFR input and static datasets from config.
@@ -178,8 +193,10 @@ graph-communities-benchmark/
 |- main_static.py
 |- config/
 |  |- algorithms.yaml
-|  |- dataset_config.yaml
-|  `- visualization.yaml
+|  |- dynamic_dataset_config.yaml
+|  |- static_dataset_config.yaml
+|  |- visualization_dynamic.yaml
+|  `- visualization_static.yaml
 |- docs/
 |- scripts/
 |  |- benchmark.sh
@@ -215,20 +232,31 @@ Details are in [docs/metrics.md](docs/metrics.md).
 ## Data And Outputs
 
 - Raw datasets are expected under `data/` by default.
-- Raw Comet exports are written under `experiments/raw/`.
-- Merged plot-ready data is written under `experiments/merged/`.
-- Generated figures are written under `assets/grouped/`.
+- Raw Comet exports are written under `experiments/dynamic/raw/` and `experiments/static/raw/`.
+- Merged plot-ready data is written under `experiments/dynamic/merged/` and `experiments/static/merged/`.
+- Generated figures are written under `assets/dynamic/` and `assets/static/`.
+- Plot settings live in `config/visualization_dynamic.yaml` and `config/visualization_static.yaml`.
 
 Note: `data/`, `experiments/`, and `assets/` are gitignored in this repository.
 
 ## Notes
 
 - `main.py` is the temporal and LFR entry point; it can run both snapshot and temporal algorithms.
-- `main_static.py` is the static entry point.
+- `main_static.py` is the static entry point and can also load one labeled LFR snapshot from a configured `type: lfr` folder.
 - Static graphs reuse the same evaluation and logging pipeline by loading as `TemporalGraph(base_graph=G, steps=[])`.
+- In static mode, configured LFR datasets load `snapshot_t0.gml` when present; otherwise the earliest `snapshot_t*.gml` file is used as the single benchmark snapshot.
+- Comet projects are now mode-specific, using `graph-community-detection-dynamic-*` and `graph-community-detection-static-*` names.
 - Shared model code lives under `src/models/common/`; algorithm implementations live under `src/models/static/` and `src/models/dynamic/`.
 - Some CDlib algorithms may require optional third-party packages beyond `requirements.txt`.
 - The `.env.example` file includes `COMET_PROJECT_NAME`, but current benchmark runs derive the Comet project name from the dataset automatically.
+
+## Synthetic LFR Naming
+
+For generated LFR datasets, prefer short keys that expose the main structural parameters:
+
+- Recommended pattern: `synthetic-n-<nodes>-k<avg_degree>-mu<mixing>-c<min>-<max>`
+- Example: `synthetic-n-10000-k4-mu0.1-c50-200`
+- Use the hyphenated key in YAML config and shell commands; use the underscore version for folder names when needed.
 
 ## License
 

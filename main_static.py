@@ -21,12 +21,12 @@ from dotenv import load_dotenv
 from tqdm.auto import tqdm
 
 from src.algorithms.factory import load_algorithms
-from src.dataloader.static_loader import load_static_as_temporal, load_builtin_graph, BUILTIN_GRAPHS
+from src.dataloader.static_loader import load_static_as_temporal, load_builtin_graph, load_lfr_single_snapshot, BUILTIN_GRAPHS
 from src.pipeline_utils import run_algorithm, evaluate, log_results
 
 load_dotenv()
 
-CONFIG_PATH = "config/dataset_config.yaml"
+CONFIG_PATH = "config/static_dataset_config.yaml"
 
 
 def parse_static_args():
@@ -46,7 +46,7 @@ def parse_static_args():
     )
     source.add_argument(
         "--config", type=str, default=None,
-        help="Load dataset by name from config/dataset_config.yaml static_graphs section",
+        help="Load dataset by name from config/static_dataset_config.yaml datasets section",
     )
 
     # Dataset metadata
@@ -63,8 +63,8 @@ def parse_static_args():
         help="Field delimiter (default: space). Use 'tab' for TSV files.",
     )
     parser.add_argument(
-        "--preload-fraction", type=float, default=1.0,
-        help="Fraction of edges to load (default: 1.0 = all)",
+        "--preload-fraction", type=float, default=None,
+        help="Fraction of edges to load (default: config value or 1.0)",
     )
     parser.add_argument(
         "--ground-truth-attr", type=str, default=None,
@@ -85,17 +85,17 @@ def parse_static_args():
 
 
 def _load_static_config(dataset_key: str) -> dict:
-    """Load a static graph config entry from dataset_config.yaml."""
+    """Load a static graph config entry from static_dataset_config.yaml."""
     with open(CONFIG_PATH, "r") as f:
         config = yaml.safe_load(f)
 
-    static_graphs = config.get("static_graphs", {})
-    if dataset_key not in static_graphs:
-        available = ", ".join(sorted(static_graphs.keys())) if static_graphs else "(none defined)"
+    datasets = config.get("datasets", {})
+    if dataset_key not in datasets:
+        available = ", ".join(sorted(datasets.keys())) if datasets else "(none defined)"
         print(f"Error: Static dataset '{dataset_key}' not found. Available: {available}")
         sys.exit(1)
 
-    return static_graphs[dataset_key]
+    return datasets[dataset_key]
 
 
 def main() -> None:
@@ -114,11 +114,11 @@ def main() -> None:
             return
         with open(CONFIG_PATH, "r") as f:
             config = yaml.safe_load(f)
-        static_graphs = config.get("static_graphs", {})
-        target = config.get("target_static_datasets", list(static_graphs.keys()))
+        datasets = config.get("datasets", {})
+        target = config.get("target_datasets", list(datasets.keys()))
         print("Static datasets (from config):")
         for name in target:
-            entry = static_graphs.get(name, {})
+            entry = datasets.get(name, {})
             path = entry.get("path", "?")
             print(f"  {name}: {path}")
         return
@@ -129,28 +129,42 @@ def main() -> None:
         dataset_name = args.dataset if args.dataset != "static" else args.builtin
     elif args.config:
         cfg = _load_static_config(args.config)
-        delimiter = cfg.get("delimiter", " ")
-        if delimiter == "tab":
-            delimiter = "\t"
-        tg = load_static_as_temporal(
-            file_path=cfg["path"],
-            source_idx=cfg.get("source_idx", 0),
-            target_idx=cfg.get("target_idx", 1),
-            delimiter=delimiter,
-            preload_fraction=args.preload_fraction,
-            ground_truth_attr=cfg.get("ground_truth_attr"),
-        )
+        dataset_type = cfg.get("type", "edge_list")
+
+        if dataset_type == "lfr":
+            # Load LFR single snapshot (t0)
+            tg = load_lfr_single_snapshot(
+                folder_path=cfg["path"],
+                ground_truth_attr=cfg.get("ground_truth_attr", "communities"),
+            )
+        else:
+            # Load edge list / GML file (existing behavior)
+            delimiter = cfg.get("delimiter", " ")
+            if delimiter == "tab":
+                delimiter = "\t"
+            preload_fraction = args.preload_fraction
+            if preload_fraction is None:
+                preload_fraction = cfg.get("preload_fraction", 1.0)
+            tg = load_static_as_temporal(
+                file_path=cfg["path"],
+                source_idx=cfg.get("source_idx", 0),
+                target_idx=cfg.get("target_idx", 1),
+                delimiter=delimiter,
+                preload_fraction=preload_fraction,
+                ground_truth_attr=cfg.get("ground_truth_attr"),
+            )
         dataset_name = args.dataset if args.dataset != "static" else cfg.get("dataset_name", args.config)
     elif args.dataset_path:
         delimiter = args.delimiter
         if delimiter == "tab":
             delimiter = "\t"
+        preload_fraction = args.preload_fraction if args.preload_fraction is not None else 1.0
         tg = load_static_as_temporal(
             file_path=args.dataset_path,
             source_idx=args.source_idx,
             target_idx=args.target_idx,
             delimiter=delimiter,
-            preload_fraction=args.preload_fraction,
+            preload_fraction=preload_fraction,
             ground_truth_attr=args.ground_truth_attr,
         )
         dataset_name = args.dataset
@@ -164,8 +178,13 @@ def main() -> None:
     print(f"Dataset: {dataset_name}")
     has_gt = tg._ground_truth_clusterings is not None
     print(f"Ground truth: {'yes' if has_gt else 'no'}")
-    if args.preload_fraction < 1.0:
-        print(f"Preload fraction: {args.preload_fraction}")
+    effective_preload_fraction = args.preload_fraction
+    if args.config and effective_preload_fraction is None:
+        effective_preload_fraction = cfg.get("preload_fraction", 1.0)
+    if args.dataset_path and effective_preload_fraction is None:
+        effective_preload_fraction = 1.0
+    if effective_preload_fraction is not None and effective_preload_fraction < 1.0:
+        print(f"Preload fraction: {effective_preload_fraction}")
     print()
 
     # Load algorithms from config — filter to static-only (dynamic algorithms
@@ -187,10 +206,12 @@ def main() -> None:
 
     static_args = StaticArgs()
     static_args.dataset = dataset_name
+    static_args.benchmark_mode = "static"
     static_args.max_steps = 0
     static_args.batch_range = 0.0
     static_args.initial_fraction = 1.0
     static_args.delete_insert_ratio = 0.0
+    static_args.preload_fraction = effective_preload_fraction if effective_preload_fraction is not None else 1.0
 
     # Run pipeline
     for _run_idx in tqdm(range(args.num_runs), desc="Runs"):

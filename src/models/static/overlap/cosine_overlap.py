@@ -30,7 +30,7 @@ class CosineOverlap(CommunityDetectionAlgorithm):
     ):
         """
         Initialize CosineOverlap parameters.
-        
+
         Args:
             theta: Cosine similarity threshold for adding nodes to communities (default 0.85)
             walk_power: Power to raise the transition matrix (default 3)
@@ -165,7 +165,9 @@ class CosineOverlap(CommunityDetectionAlgorithm):
         return results
 
 
-def cosine_overlap(G: nx.Graph, theta: float = 0.85, walk_power: int = 3, seed: int = 123) -> NodeClustering:
+def vast_cosine_overlap(
+    G: nx.Graph, theta: float = 0.85, walk_power: int = 3, seed: int = 123
+) -> NodeClustering:
     """
     Convenience function for CosineOverlap community detection on a single graph.
 

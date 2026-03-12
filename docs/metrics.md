@@ -94,7 +94,7 @@ Overlapping ground-truth evaluation is routed through [`src/evaluations/onmi_fas
 1. Implement the metric in `src/evaluations/`.
 2. Extend evaluation in [`src/pipeline_utils.py`](../src/pipeline_utils.py).
 3. Add storage fields to [`src/factory/communities.py`](../src/factory/communities.py) if needed.
-4. Add the metric name to [`config/visualization.yaml`](../config/visualization.yaml) if you want it fetched and plotted.
+4. Add the metric name to [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml) and/or [`config/visualization_static.yaml`](../config/visualization_static.yaml) if you want it fetched and plotted.
 
 ## References
 

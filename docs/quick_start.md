@@ -55,7 +55,7 @@ Common options:
 
 ## Run From Dataset Config
 
-List datasets from [`config/dataset_config.yaml`](../config/dataset_config.yaml):
+List datasets from [`config/dynamic_dataset_config.yaml`](../config/dynamic_dataset_config.yaml):
 
 ```bash
 ./scripts/benchmark.sh --list
@@ -81,7 +81,7 @@ Run the same benchmark multiple times:
 
 Notes:
 
-- `benchmark.sh` reads dataset values from [`config/dataset_config.yaml`](../config/dataset_config.yaml).
+- `benchmark.sh` reads dataset values from [`config/dynamic_dataset_config.yaml`](../config/dynamic_dataset_config.yaml).
 - If you need a custom `delete_insert_ratio`, call `main.py` directly.
 
 ## Run A Static Benchmark
@@ -101,6 +101,14 @@ Run a configured static dataset:
 ```bash
 ./scripts/benchmark_static.sh --list
 ./scripts/benchmark_static.sh karate 1
+./scripts/benchmark_static.sh synthetic-n-5000-1 1
+```
+
+Use the config-defined preload fraction, or override it from the CLI:
+
+```bash
+python main_static.py --config karate
+python main_static.py --config karate --preload-fraction 0.25
 ```
 
 Run a built-in graph with ground truth:
@@ -113,7 +121,9 @@ Notes:
 
 - Static graphs are loaded as `TemporalGraph(base_graph=G, steps=[])`.
 - `main_static.py` automatically skips temporal algorithms such as `tiles`.
-- `--preload-fraction` benchmarks a partial static graph without creating temporal steps.
+- `benchmark_static.sh` reads dataset values from [`config/static_dataset_config.yaml`](../config/static_dataset_config.yaml).
+- `--preload-fraction` overrides the config value and benchmarks a partial static graph without creating temporal steps.
+- When a static config entry has `type: lfr`, `main_static.py` loads a single labeled snapshot from the folder and benchmarks it as one static graph.
 
 ## Run On LFR `.gml` Snapshots
 
@@ -128,6 +138,14 @@ python main.py \
 
 The loader uses the first snapshot as the base graph, derives temporal changes from later snapshots, and precomputes ground-truth clusterings.
 
+For static evaluation of the same dataset:
+
+```bash
+./scripts/benchmark_static.sh synthetic-n-5000-1 1
+```
+
+This loads one labeled snapshot from the configured folder and evaluates static algorithms only.
+
 ## Generate Plots
 
 Recommended:
@@ -136,14 +154,21 @@ Recommended:
 ./scripts/plot.sh
 ```
 
+To process only one benchmark mode:
+
+```bash
+./scripts/plot.sh dynamic
+./scripts/plot.sh static
+```
+
 Manual equivalent:
 
 ```bash
-PYTHONPATH=. python tools/fetch_and_merge.py
-PYTHONPATH=. python tools/plots.py
+PYTHONPATH=. python tools/fetch_and_merge.py --benchmark-type all
+PYTHONPATH=. python tools/plots.py --benchmark-type all
 ```
 
-The plot pipeline reads [`config/visualization.yaml`](../config/visualization.yaml), fetches Comet runs into `experiments/raw/`, merges them into `experiments/merged/`, and writes figures to `assets/grouped/`.
+The plot pipeline reads [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml) and [`config/visualization_static.yaml`](../config/visualization_static.yaml), fetches Comet runs into `experiments/dynamic/raw/` and `experiments/static/raw/`, merges them into `experiments/dynamic/merged/` and `experiments/static/merged/`, and writes figures to `assets/dynamic/` and `assets/static/`.
 
 ## Typical Workflow
 
@@ -159,7 +184,7 @@ python main_static.py --builtin karate --num-runs 1
 ### Dataset not found
 
 - Verify the file exists under `data/`.
-- Verify the path and dataset key in [`config/dataset_config.yaml`](../config/dataset_config.yaml).
+- Verify the path and dataset key in [`config/dynamic_dataset_config.yaml`](../config/dynamic_dataset_config.yaml) or [`config/static_dataset_config.yaml`](../config/static_dataset_config.yaml).
 
 ### Comet credentials missing
 

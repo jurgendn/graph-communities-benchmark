@@ -26,6 +26,7 @@ load_dotenv()
 
 def main() -> None:
     args = parse_args()
+    args.benchmark_mode = "dynamic"
 
     # Step 0: Load data
     if args.lfr_folder:

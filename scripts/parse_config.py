@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Parse dataset_config.yaml and output as JSON for shell consumption"""
+"""Parse dynamic_dataset_config.yaml and output as JSON for shell consumption"""
 
 import sys
 import json
 import yaml
+
+
+CONFIG_PATH = "config/dynamic_dataset_config.yaml"
 
 
 def main():
@@ -14,7 +17,7 @@ def main():
     dataset_name = sys.argv[1]
     
     # Load config
-    with open("config/dataset_config.yaml", "r") as f:
+    with open(CONFIG_PATH, "r") as f:
         config = yaml.safe_load(f)
     
     # Extract dataset info

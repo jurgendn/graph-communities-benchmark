@@ -3,9 +3,9 @@
 Fetch metrics from Comet ML and merge into aggregated files.
 
 Usage:
-    python fetch_and_merge.py              # Fetch only new experiments
-    python fetch_and_merge.py --force      # Re-fetch all experiments
-    python fetch_and_merge.py --skip-merge # Only fetch, skip merging
+    python fetch_and_merge.py --benchmark-type all
+    python fetch_and_merge.py --benchmark-type dynamic --force
+    python fetch_and_merge.py --benchmark-type static --skip-merge
 """
 import argparse
 import os
@@ -31,6 +31,12 @@ def main():
         action="store_true",
         help="Only fetch data, skip merging step",
     )
+    parser.add_argument(
+        "--benchmark-type",
+        choices=["dynamic", "static", "all"],
+        default="all",
+        help="Which benchmark mode to process",
+    )
     args = parser.parse_args()
 
     # Load environment
@@ -51,59 +57,60 @@ def main():
         print("Error: COMET_WORKSPACE not set", file=sys.stderr)
         sys.exit(1)
 
-    # Get what to process
-    metrics = cfg.metric_keys()
-    projects = cfg.projects()
-    hyperparameters = cfg.hyperparameters()
-
-    if not metrics or not projects:
-        print(
-            "Error: metric_keys and projects required in config/visualization.yaml",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    # Fetch and merge
     print(f"Workspace: {workspace}")
-    print(f"Metrics: {len(metrics)} metrics")
-    print(f"Projects: {len(projects)} projects")
-    print(f"Hyperparameters: {len(hyperparameters)} hyperparameters")
     print(f"Mode: {'Force re-fetch all' if args.force else 'Fetch only new experiments'}")
     if args.skip_merge:
         print("Merge: Skipped")
     print()
 
-    raw_dir = Path(cfg.directories()["raw_dir"])
-    merge_dir = Path(cfg.directories()["merge_dir"])
-    batch_range_categories = cfg.batch_range_categories()
-
     fetcher = Fetcher(api_key=api_key, workspace=workspace)
-    merger = Merger(raw_dir=raw_dir, merge_dir=merge_dir, batch_range_categories=batch_range_categories)
 
-    for project in projects:
-        print(f"Processing: {project}")
+    benchmark_types = cfg.available_modes() if args.benchmark_type == "all" else [args.benchmark_type]
 
-        # Fetch (only new experiments unless --force is set)
-        try:
-            fetcher.fetch_project(
-                project=project,
-                metric_keys=metrics,
-                out_dir=raw_dir,
-                force=args.force,
-                hyperparameter_keys=hyperparameters,
-            )
-        except Exception as e:
-            print(f"  Fetch error: {e}")
+    for benchmark_type in benchmark_types:
+        metrics = cfg.metric_keys(benchmark_type)
+        projects = cfg.projects(benchmark_type)
+        hyperparameters = cfg.hyperparameters(benchmark_type)
+
+        if not metrics or not projects:
+            print(f"Skipping {benchmark_type}: missing metric_keys or projects in config")
             continue
 
-        # Merge
-        if not args.skip_merge:
+        directories = cfg.directories(benchmark_type)
+        raw_dir = Path(directories["raw_dir"])
+        merge_dir = Path(directories["merge_dir"])
+        batch_range_categories = cfg.batch_range_categories(benchmark_type)
+        use_batch_ranges = cfg.uses_batch_ranges(benchmark_type)
+        merger = Merger(raw_dir=raw_dir, merge_dir=merge_dir, batch_range_categories=batch_range_categories)
+
+        print(f"Benchmark type: {benchmark_type}")
+        print(f"Metrics: {len(metrics)} metrics")
+        print(f"Projects: {len(projects)} projects")
+        print(f"Hyperparameters: {len(hyperparameters)} hyperparameters")
+
+        for project in projects:
+            print(f"Processing: {project}")
+
             try:
-                merger.merge_project(project, metrics)
+                fetcher.fetch_project(
+                    project=project,
+                    metric_keys=metrics,
+                    out_dir=raw_dir,
+                    force=args.force,
+                    hyperparameter_keys=hyperparameters,
+                )
             except Exception as e:
-                print(f"  Merge error: {e}")
+                print(f"  Fetch error: {e}")
+                continue
+
+            if not args.skip_merge:
+                try:
+                    merger.merge_project(project, metrics, use_batch_ranges=use_batch_ranges)
+                except Exception as e:
+                    print(f"  Merge error: {e}")
+
+        print()
 
 
 if __name__ == "__main__":
     main()
-

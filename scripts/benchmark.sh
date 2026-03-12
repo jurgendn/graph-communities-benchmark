@@ -20,11 +20,11 @@ print_help() {
 	echo "  ./scripts/benchmark.sh --all main.py 1"
 	echo ""
 	echo "Datasets:"
-	python3 -c "import yaml; print('\n'.join(yaml.safe_load(open('config/dataset_config.yaml'))['target_datasets']))"
+	python3 -c "import yaml; print('\n'.join(yaml.safe_load(open('config/dynamic_dataset_config.yaml'))['target_datasets']))"
 }
 
 list_datasets() {
-	python3 -c "import yaml; print('\n'.join(yaml.safe_load(open('config/dataset_config.yaml'))['target_datasets']))"
+	python3 -c "import yaml; print('\n'.join(yaml.safe_load(open('config/dynamic_dataset_config.yaml'))['target_datasets']))"
 }
 
 # ============================================================================

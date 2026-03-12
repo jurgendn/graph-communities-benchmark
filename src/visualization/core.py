@@ -17,6 +17,7 @@ from src.visualization.utils import (
     algorithm_marker,
     get_algorithm_info,
     load_metric_file,
+    metric_display_name,
     project_display_name,
     sort_and_filter_algorithms,
     summarize_run,
@@ -26,10 +27,19 @@ from src.visualization.utils import (
 class Plot:
     """Plot metrics with line, box, and bar chart options."""
 
-    def __init__(self, project: str, metric_file: Path, out_dir: Path, aggregate: str = "last", batch_range: Optional[str] = None):
+    def __init__(
+        self,
+        project: str,
+        metric_file: Path,
+        out_dir: Path,
+        aggregate: str = "last",
+        batch_range: Optional[str] = None,
+        benchmark_type: str = "dynamic",
+    ):
         self.project = project
         self.metric_file = Path(metric_file)
         self.batch_range = batch_range
+        self.benchmark_type = benchmark_type
         # Include batch_range in output path if provided
         out_path = Path(out_dir) / "per_datasets" / Path(project).name
         if batch_range:
@@ -47,7 +57,7 @@ class Plot:
         """Get sorted and filtered algorithm list."""
         data = self._load_data()
         algs = list(data.keys())
-        return sort_and_filter_algorithms(algs)
+        return sort_and_filter_algorithms(algs, self.benchmark_type)
 
     def _save_fig(self, fig, suffix: str) -> Optional[Path]:
         """Save figure to disk."""
@@ -58,7 +68,7 @@ class Plot:
 
     def _add_labels(self, ax):
         """Add project name and labels to axes."""
-        proj_name = project_display_name(Path(self.project).name)
+        proj_name = project_display_name(Path(self.project).name, self.benchmark_type)
         ax.text(0.02, 0.95, proj_name, transform=ax.transAxes,
                 fontsize=9, va="top", ha="left", weight="bold")
         ax.set_ylabel(self.metric_name)
@@ -86,9 +96,9 @@ class Plot:
             steps = sorted(series.keys())
             means = [np.mean(series[s]) for s in steps]
 
-            color = algorithm_color(alg)
-            marker = algorithm_marker(alg) or "o"
-            label = algorithm_display_name(alg)
+            color = algorithm_color(alg, self.benchmark_type)
+            marker = algorithm_marker(alg, self.benchmark_type) or "o"
+            label = algorithm_display_name(alg, self.benchmark_type)
 
             ax.plot(steps, means, marker=marker, label=label,
                    color=color, linewidth=2, markersize=6)
@@ -129,12 +139,12 @@ class Plot:
         w = max(6, len(labels) * 0.7)
         fig, ax = plt.subplots(figsize=(w, 6))
 
-        labels_disp = [algorithm_display_name(alg) for alg in labels]
+        labels_disp = [algorithm_display_name(alg, self.benchmark_type) for alg in labels]
         bp = ax.boxplot(groups, tick_labels=labels_disp, patch_artist=True, showfliers=True)
 
         # Color boxes
         for patch, alg in zip(bp.get("boxes", []), labels):
-            color = algorithm_color(alg)
+            color = algorithm_color(alg, self.benchmark_type)
             if color:
                 try:
                     patch.set_facecolor(color)
@@ -175,11 +185,11 @@ class Plot:
         fig, ax = plt.subplots(figsize=(w, 6))
 
         x = np.arange(len(labels))
-        labels_disp = [algorithm_display_name(alg) for alg in labels]
+        labels_disp = [algorithm_display_name(alg, self.benchmark_type) for alg in labels]
 
         # Draw bars with individual colors
         for i, (mean, std, alg) in enumerate(zip(means, stds, labels)):
-            color = algorithm_color(alg) or "C0"
+            color = algorithm_color(alg, self.benchmark_type) or "C0"
             bar = ax.bar(i, mean, yerr=std, capsize=5, color=color, alpha=0.8)
             # Add value on top of bar
             ax.text(i, mean + std + 0.01 * max(means), f"{mean:.2f}", 
@@ -208,12 +218,28 @@ class RuntimePlot(Plot):
     pass
 
 
+class ONMIPlot(Plot):
+    """Bar chart for ONMI metrics."""
+    
+    def plot(self) -> Optional[Path]:
+        """Generate bar chart for ONMI metric."""
+        return self.plot_bar()
+
+
 class GroupedPlotter:
     """Create grouped multi-dataset figures."""
 
-    def __init__(self, merge_root: Path = Path("data/merge"), out_base: Path = Path("assets/grouped")):
+    def __init__(
+        self,
+        benchmark_type: str = "dynamic",
+        merge_root: Path = Path("data/merge"),
+        out_base: Path = Path("assets/grouped"),
+        use_batch_ranges: bool = True,
+    ):
+        self.benchmark_type = benchmark_type
         self.merge_root = Path(merge_root)
         self.out_base = Path(out_base)
+        self.use_batch_ranges = use_batch_ranges
         self.out_base.mkdir(parents=True, exist_ok=True)
 
     def plot(self, metric: str = "num_communities") -> List[Path]:
@@ -222,20 +248,31 @@ class GroupedPlotter:
 
         # Get configuration
         cfg = ConfigManager()
-        plotter_cfg = cfg.plotter()
+        plotter_cfg = cfg.plotter(self.benchmark_type)
         grouped = plotter_cfg.get("grouped_plotter", {}) or {}
         group_by = grouped.get("group_by", ["real_world_datasets"])
-        batch_range_categories = cfg.batch_range_categories()
 
         # Build legend once
-        alg_info = get_algorithm_info()
+        alg_info = get_algorithm_info(self.benchmark_type)
         legend_handles, legend_labels = self._build_legend(alg_info)
 
-        # Determine plot modes
-        modes: List[Optional[str]] = ["box", "bar", "line"] if metric in {"cdlib_modularity", "customize_q0_modularity"} else [None]
+        # Determine plot modes from config or fallback to defaults
+        cfg = ConfigManager()
+        plotter_cfg = cfg.plotter(self.benchmark_type)
+        metric_modes = plotter_cfg.get("metric_modes", {})
+        
+        if metric in metric_modes:
+            modes = metric_modes[metric]
+            # Handle case where modes might be a string instead of list
+            if isinstance(modes, str):
+                modes = [modes]
+        else:
+            # Default behavior: box/bar/line for modularity metrics, None (line) for others
+            modes: List[Optional[str]] = ["box", "bar", "line"] if metric in {"cdlib_modularity", "customize_q0_modularity"} else [None]
+        # modes: List[Optional[str]] = ["box", "bar", "line"] if metric in {"cdlib_modularity", "customize_q0_modularity", "nmi"} else [None]
 
         # Get dataset info
-        dataset_info = cfg.dataset_info()
+        dataset_info = cfg.dataset_info(self.benchmark_type)
 
         # Generate plots for each group and batch range
         for group_name in group_by:
@@ -248,7 +285,10 @@ class GroupedPlotter:
             batch_ranges = self._get_batch_ranges_for_group(group_name, datasets)
             
             for batch_range in batch_ranges:
-                print(f"  Batch Range: {batch_range}, Group: {group_name}")
+                context = f"  Group: {group_name}"
+                if batch_range:
+                    context = f"  Batch Range: {batch_range}, Group: {group_name}"
+                print(context)
                 for mode in modes:
                     path = self._plot_group(
                         metric=metric,
@@ -265,6 +305,9 @@ class GroupedPlotter:
 
     def _get_available_batch_ranges(self) -> List[str]:
         """Get list of available batch ranges from merge directory."""
+        if not self.use_batch_ranges:
+            return [""]
+
         batch_ranges = set()
         if self.merge_root.exists():
             for project_dir in self.merge_root.iterdir():
@@ -290,7 +333,7 @@ class GroupedPlotter:
         """Plot a single group of datasets for a specific batch range."""
         # Get datasets for this group
         cfg = ConfigManager()
-        dataset_info = cfg.dataset_info()
+        dataset_info = cfg.dataset_info(self.benchmark_type)
 
         datasets = dataset_info.get(group_name.replace("_datasets", ""), [])
         if not datasets:
@@ -322,7 +365,7 @@ class GroupedPlotter:
                 continue
 
             data = load_metric_file(metric_file)
-            algs = sort_and_filter_algorithms(list(data.keys()))
+            algs = sort_and_filter_algorithms(list(data.keys()), self.benchmark_type)
 
             # Check if we have any data
             if not algs or not data:
@@ -335,6 +378,9 @@ class GroupedPlotter:
                 self._plot_modularity(ax, data, algs, metric, mode)
             elif metric == "runtime":
                 self._plot_runtime(ax, data, algs, metric)
+            elif mode is not None and metric in {"nmi"}:
+                # For metrics that support modal plotting (box/bar/line) like nmi
+                self._plot_modularity(ax, data, algs, metric, mode)
             else:
                 self._plot_timeseries(ax, data, algs, metric)
 
@@ -343,7 +389,7 @@ class GroupedPlotter:
                 ax.set_ylabel("")
 
             # Set title
-            disp_name = project_display_name(dataset_name)
+            disp_name = project_display_name(dataset_name, self.benchmark_type)
             ax.set_title(disp_name, fontsize=9, fontweight="normal", pad=6)
             ax.tick_params(axis="y", labelsize=8)
 
@@ -363,8 +409,11 @@ class GroupedPlotter:
 
         # Save with batch range in path
         suffix = mode if mode else "_"
-        batch_folder = batch_range if batch_range else "all"
-        parent_folder = self.out_base / f"{metric}" / batch_folder / f"{group_name}"
+        parent_folder = self.out_base / f"{metric}"
+        if self.use_batch_ranges:
+            batch_folder = batch_range if batch_range else "all"
+            parent_folder = parent_folder / batch_folder
+        parent_folder = parent_folder / f"{group_name}"
         parent_folder.mkdir(parents=True, exist_ok=True)
         out_path = parent_folder / f"{suffix}.png"
         fig.savefig(str(out_path), dpi=300, bbox_inches="tight")
@@ -379,19 +428,19 @@ class GroupedPlotter:
             groups = [data.get(alg, []) for alg in labels]
             groups = [[summarize_run(run, "last") for run in runs] for runs in groups]
             groups = [[v for v in g if v is not None and not np.isnan(v)] for g in groups]
-            labels_disp = [algorithm_display_name(alg) for alg in labels]
+            labels_disp = [algorithm_display_name(alg, self.benchmark_type) for alg in labels]
             ax.boxplot(groups, tick_labels=labels_disp, patch_artist=True)
 
             # Color boxes
             for patch, alg in zip(ax.findobj(Patch), labels):
-                color = algorithm_color(alg)
+                color = algorithm_color(alg, self.benchmark_type)
                 if color:
                     patch.set_facecolor(color)
 
         elif mode == "bar":
             x = np.arange(len(labels))
             for i, (mean, std, alg) in enumerate(zip(means, stds, labels)):
-                color = algorithm_color(alg) or "C0"
+                color = algorithm_color(alg, self.benchmark_type) or "C0"
                 ax.bar(i, mean, yerr=std, capsize=4, color=color, alpha=0.9)
                 # Add value on top of bar
                 ax.text(i, mean + std + 0.01 * max(means), f"{mean:.2f}", 
@@ -402,8 +451,10 @@ class GroupedPlotter:
             x = np.arange(len(labels))
             ax.plot(x, means, color="black", linestyle="--", linewidth=2, marker="o", markersize=4)
             ax.set_xticks([])
-
-        ax.set_ylabel(metric)
+        metric_display = metric_display_name(
+            metric=metric, benchmark_type=self.benchmark_type
+        )
+        ax.set_ylabel(metric_display)
         ax.grid(axis="y", alpha=0.3)
 
     def _plot_runtime(self, ax, data: Dict, algs: List[str], metric: str):
@@ -412,14 +463,15 @@ class GroupedPlotter:
 
         x = np.arange(len(labels))
         for i, (mean, std, alg) in enumerate(zip(means, stds, labels)):
-            color = algorithm_color(alg) or "C0"
+            color = algorithm_color(alg, self.benchmark_type) or "C0"
             ax.bar(i, mean, yerr=std, color=color, alpha=0.9)
             # Add value on top of bar
             ax.text(i, mean + std + 0.01 * max(means), f"{mean:.2f}", 
                    ha="center", va="bottom", fontsize=8, fontweight="bold")
 
         ax.set_xticks([])
-        ax.set_ylabel("seconds (s)")
+        metric_display = metric_display_name(metric, self.benchmark_type)
+        ax.set_ylabel(metric_display)
         ax.grid(axis="y", alpha=0.3)
 
     def _plot_timeseries(self, ax, data: Dict, algs: List[str], metric: str):
@@ -436,13 +488,14 @@ class GroupedPlotter:
             steps = sorted(series.keys())
             means = [np.mean(series[s]) for s in steps]
 
-            color = algorithm_color(alg)
-            marker = algorithm_marker(alg) or "o"
+            color = algorithm_color(alg, self.benchmark_type)
+            marker = algorithm_marker(alg, self.benchmark_type) or "o"
 
             ax.plot(steps, means, marker=marker, color=color, linewidth=2, markersize=4)
 
         ax.set_xlabel("step")
-        ax.set_ylabel(metric)
+        metric_display = metric_display_name(metric, self.benchmark_type)
+        ax.set_ylabel(metric_display)
         ax.grid(alpha=0.3)
 
     def _build_legend(self, alg_info: Dict) -> tuple:
@@ -459,7 +512,7 @@ class GroupedPlotter:
                 continue
 
             handles.append(Patch(facecolor=color, edgecolor="black"))
-            labels.append(algorithm_display_name(alg))
+            labels.append(algorithm_display_name(alg, self.benchmark_type))
 
         return handles, labels
 
@@ -482,7 +535,7 @@ class GroupedPlotter:
     def _get_layout(self, group_name: str, num_datasets: int) -> tuple:
         """Get subplot layout (rows, cols)."""
         cfg = ConfigManager()
-        plotter_cfg = cfg.plotter()
+        plotter_cfg = cfg.plotter(self.benchmark_type)
         grouped = plotter_cfg.get("grouped_plotter", {})
         layouts = grouped.get("subplots_layout", {}) or {}
 
