@@ -179,6 +179,8 @@ datasets:
 
 `main.py` supports folders of `.gml` snapshots.
 
+`main_static.py` also supports configured LFR folders in static mode and loads one snapshot as a single static graph.
+
 Expected naming:
 
 ```text
@@ -191,9 +193,19 @@ Run them with:
 
 ```bash
 python main.py --lfr-folder ./data/synthetic_n_5000_1 --ground-truth-attr communities
+./scripts/benchmark_static.sh synthetic-n-5000-1 1
 ```
 
-The loader is implemented in [`src/dataloader/data_reader.py`](../src/dataloader/data_reader.py). Ground truth is precomputed at load time and stored on `TemporalGraph._ground_truth_clusterings`.
+The temporal loader is implemented in [`src/dataloader/data_reader.py`](../src/dataloader/data_reader.py). The static single-snapshot loader is implemented in [`src/dataloader/static_loader.py`](../src/dataloader/static_loader.py). Ground truth is precomputed at load time and stored on `TemporalGraph._ground_truth_clusterings`.
+
+## Document Vast-PMO
+
+The repository includes a mathematical summary of the Vast-PMO model in [`VAST-PMO.md`](../VAST-PMO.md). Keep that file in sync when you change:
+
+- the Louvain backbone initialization
+- the PMO gain function
+- overlap constraints such as `r`
+- parameter names or semantics in [`config/algorithms.yaml`](../config/algorithms.yaml)
 
 ## Add A New Metric
 

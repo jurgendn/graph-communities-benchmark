@@ -12,63 +12,103 @@ hyperparameters:
 metric_keys:
   - "cdlib_modularity"
   - "customize_q0_modularity"
+  - "nmi"
   - "num_communities"
   - "runtime"
 
 use_batch_ranges: false
 
 projects:
-  - graph-community-detection-static-karate
+  - graph-community-detection-static-collegemsg
   - graph-community-detection-static-email-enron-large
-  - graph-community-detection-static-ca-astroph
+  - graph-community-detection-static-ia-frwikinews-user-edits
+  - graph-community-detection-static-soc-sign-bitcoin-otc
+  - graph-community-detection-static-soc-sign-bitcoin-alpha
   - graph-community-detection-static-ca-condmat
-  - graph-community-detection-static-ca-hepph
-  - graph-community-detection-static-scc-infect-dublin
-  - graph-community-detection-static-scc-infect-hyper
-  - graph-community-detection-static-scc-retweet
-  - graph-community-detection-static-scc-twitter-copen
-  - graph-community-detection-static-soc-blogcatalog-asu
+  - graph-community-detection-static-sx_mathoverflow
+  - graph-community-detection-static-edit-enwikibooks
+  - graph-community-detection-static-lfr_large_community_size
   - graph-community-detection-static-bio-wormnet-v3
-  - graph-community-detection-static-lfr-large-community-size
-  - graph-community-detection-static-lfr-small-community-size
+  - graph-community-detection-static-lfr_small_community_size
+  - graph-community-detection-static-ca-hepph
+  - graph-community-detection-static-ca-astroph
+  - graph-community-detection-static-scc_infect_dublin
+  - graph-community-detection-static-scc_infect_hyper
+  - graph-community-detection-static-scc_tweeter_copen
+  - graph-community-detection-static-scc_retweet
+  - graph-community-detection-static-sx_askubuntu
+  - graph-community-detection-static-synthetic-n10000-mu0-1-on200500-om2-4-k50-100-c50-200
+  - graph-community-detection-static-synthetic-n10000-mu0-2-on200500-om2-4-k50-100-c50-200
+  - graph-community-detection-static-synthetic-n10000-mu0-3-on200500-om2-4-k50-100-c50-200
+  - graph-community-detection-static-synthetic-n10000-mu0-4-on200500-om2-4-k50-100-c50-200
+  - graph-community-detection-static-synthetic-n10000-mu0-5-on200500-om2-4-k50-100-c50-200
+  - graph-community-detection-static-synthetic-n10000-mu0-25-on200500-om2-4-k50-100-c50-200
 
 plotter:
   common_plotter_settings:
     synthetic_datasets: &static_synthetic_datasets
-      - graph-community-detection-static-lfr-large-community-size
-      - graph-community-detection-static-lfr-small-community-size
+      - graph-community-detection-static-synthetic-n10000-mu0-1-on200500-om2-4-k50-100-c50-200
+      - graph-community-detection-static-synthetic-n10000-mu0-2-on200500-om2-4-k50-100-c50-200
+      - graph-community-detection-static-synthetic-n10000-mu0-3-on200500-om2-4-k50-100-c50-200
+      - graph-community-detection-static-synthetic-n10000-mu0-4-on200500-om2-4-k50-100-c50-200
+      - graph-community-detection-static-synthetic-n10000-mu0-5-on200500-om2-4-k50-100-c50-200
+      # - graph-community-detection-static-synthetic-n10000-mu0-25-on200500-om2-4-k50-100-c50-200
     real_world_datasets: &static_real_world_datasets
-      - graph-community-detection-static-karate
-      - graph-community-detection-static-email-enron-large
-      - graph-community-detection-static-ca-astroph
+      - graph-community-detection-static-bio-wormnet-v3
       - graph-community-detection-static-ca-condmat
       - graph-community-detection-static-ca-hepph
-      - graph-community-detection-static-scc-infect-dublin
-      - graph-community-detection-static-scc-infect-hyper
-      - graph-community-detection-static-scc-retweet
-      - graph-community-detection-static-scc-twitter-copen
-      - graph-community-detection-static-soc-blogcatalog-asu
-      - graph-community-detection-static-bio-wormnet-v3
+      - graph-community-detection-static-ca-astroph
+      - graph-community-detection-static-collegemsg
+      - graph-community-detection-static-edit-enwikibooks
+      - graph-community-detection-static-ia-frwikinews-user-edits
+      - graph-community-detection-static-soc-sign-bitcoin-alpha
+      - graph-community-detection-static-soc-sign-bitcoin-otc
+      - graph-community-detection-static-email-enron-large
+      # - graph-community-detection-static-sx_askubuntu
+      # - graph-community-detection-static-scc_infect_dublin
+      # - graph-community-detection-static-scc_infect_hyper
+      # - graph-community-detection-static-scc_tweeter_copen
+      # - graph-community-detection-static-scc_retweet
+      # - graph-community-detection-static-sx_mathoverflow
     projects_name_mapping:
-      graph-community-detection-static-karate: "Karate"
-      graph-community-detection-static-email-enron-large: "Email-Enron-Large"
-      graph-community-detection-static-ca-astroph: "CA-AstroPh"
+      graph-community-detection-static-bio-wormnet-v3: "Bio-WormNet-v3"
       graph-community-detection-static-ca-condmat: "CA-CondMat"
       graph-community-detection-static-ca-hepph: "CA-Hepph"
-      graph-community-detection-static-scc-infect-dublin: "SCC-Infect-Dublin"
-      graph-community-detection-static-scc-infect-hyper: "SCC-Infect-Hyper"
-      graph-community-detection-static-scc-retweet: "SCC-Retweet"
-      graph-community-detection-static-scc-twitter-copen: "SCC-Twitter-Copen"
-      graph-community-detection-static-soc-blogcatalog-asu: "Soc-BlogCatalog-ASU"
-      graph-community-detection-static-bio-wormnet-v3: "Bio-WormNet-v3"
-      graph-community-detection-static-lfr-large-community-size: "LFR-Large-Community-Size"
-      graph-community-detection-static-lfr-small-community-size: "LFR-Small-Community-Size"
+      graph-community-detection-static-ca-astroph: "CA-AstroPh"
+      graph-community-detection-static-collegemsg: "CollegeMsg"
+      graph-community-detection-static-edit-enwikibooks: "Edit-Enwikibooks"
+      graph-community-detection-static-email-enron-large: "Email-Enron-Large"
+      graph-community-detection-static-ia-frwikinews-user-edits: "IA-FrWikiNews-User-Edits"
+      graph-community-detection-static-lfr_large_community_size: "LFR-Large-Community-Size"
+      graph-community-detection-static-lfr_small_community_size: "LFR-Small-Community-Size"
+      graph-community-detection-static-scc_infect_dublin: "SCC-Infect-Dublin"
+      graph-community-detection-static-scc_infect_hyper: "SCC-Infect-Hyper"
+      graph-community-detection-static-scc_retweet: "SCC-Retweet"
+      graph-community-detection-static-scc_tweeter_copen: "SCC-Tweeter-Copen"
+      graph-community-detection-static-soc-sign-bitcoin-alpha: "Soc-Sign-Bitcoin-Alpha"
+      graph-community-detection-static-soc-sign-bitcoin-otc: "Soc-Sign-Bitcoin-OTC"
+      graph-community-detection-static-sx_askubuntu: "SX-AskUbuntu"
+      graph-community-detection-static-sx_mathoverflow: "SX-MathOverflow"
+      graph-community-detection-static-synthetic-n10000-mu0-1-on200500-om2-4-k50-100-c50-200: "n10000-mu0-1-on200500-om2-4-k50-100-c50-200"
+      graph-community-detection-static-synthetic-n10000-mu0-2-on200500-om2-4-k50-100-c50-200: "n10000-mu0-2-on200500-om2-4-k50-100-c50-200"
+      graph-community-detection-static-synthetic-n10000-mu0-3-on200500-om2-4-k50-100-c50-200: "n10000-mu0-3-on200500-om2-4-k50-100-c50-200"
+      graph-community-detection-static-synthetic-n10000-mu0-4-on200500-om2-4-k50-100-c50-200: "n10000-mu0-4-on200500-om2-4-k50-100-c50-200"
+      graph-community-detection-static-synthetic-n10000-mu0-5-on200500-om2-4-k50-100-c50-200: "n10000-mu0-5-on200500-om2-4-k50-100-c50-200"
+      graph-community-detection-static-synthetic-n10000-mu0-25-on200500-om2-4-k50-100-c50-200: "n10000-mu0-25-on200500-om2-4-k50-100-c50-200"
+    metric_name_mapping:
+      nmi: "ONMI"
+      cdlib_modularity: "Modularity (CDLib)"
+      # customize_q0_modularity: "Overlap Modularity"
+      customize_q0_modularity: " "
+      num_communities: "Number of Communities"
+      runtime: "Execution Time (s)"
     selected_algorithms:
       - coach
       - tiles
       - core_expansion
       - graph_entropy
-      - overlapping_rwgp_df
+      # - overlapping_rwgp_df
+      - vast-pmo
     methods_name:
       coach: CoAcH
       core_expansion: Core Expansion
@@ -77,29 +117,39 @@ plotter:
       overlapping_rwgp_df: RWGP-DFL-Overlap
       tiles: Tiles
       slpa: SLPA
+      vast-pmo: Structured-PMO
     colors:
+      vast-pmo: "#E74C3C"
+      # overlapping_rwgp_df: "#E74C3C"
       coach: "#1B4F72"
       core_expansion: "#E09F3E"
       graph_entropy: "#2E8B57"
       slpa: "#8E44AD"
       umstmo: "#C0392B"
-      overlapping_rwgp_df: "#E74C3C"
       tiles: "#17A2B8"
     orders:
-      - overlapping_rwgp_df
+      - vast-pmo
+      # - overlapping_rwgp_df
       - coach
       - core_expansion
       - graph_entropy
-      - tiles
-      - slpa
+      # - tiles
+      # - slpa
     markers:
+      vast5-pmo: "v"
       coach: "o"
       core_expansion: "s"
       graph_entropy: "D"
       umstmo: "^"
-      overlapping_rwgp_df: "v"
+      # overlapping_rwgp_df: "v"
       slpa: "P"
       tiles: "X"
+  metric_modes:
+    nmi: ["bar", "box", "line"]
+    cdlib_modularity: ["box", "bar", "line"]
+    customize_q0_modularity: ["box", "bar", "line"]
+    num_communities: ["line"]
+    runtime: ["line"]
   grouped_plotter:
     synthetic_datasets: *static_synthetic_datasets
     real_world_datasets: *static_real_world_datasets
@@ -107,5 +157,5 @@ plotter:
       - real_world_datasets
       - synthetic_datasets
     subplots_layout:
-      real_world_datasets: [3, 4]
-      synthetic_datasets: [1, 2]
+      real_world_datasets: [2, 5]
+      synthetic_datasets: [1, 5]

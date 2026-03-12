@@ -17,6 +17,7 @@ from src.visualization.utils import (
     algorithm_marker,
     get_algorithm_info,
     load_metric_file,
+    metric_display_name,
     project_display_name,
     sort_and_filter_algorithms,
     summarize_run,
@@ -217,6 +218,14 @@ class RuntimePlot(Plot):
     pass
 
 
+class ONMIPlot(Plot):
+    """Bar chart for ONMI metrics."""
+    
+    def plot(self) -> Optional[Path]:
+        """Generate bar chart for ONMI metric."""
+        return self.plot_bar()
+
+
 class GroupedPlotter:
     """Create grouped multi-dataset figures."""
 
@@ -247,8 +256,20 @@ class GroupedPlotter:
         alg_info = get_algorithm_info(self.benchmark_type)
         legend_handles, legend_labels = self._build_legend(alg_info)
 
-        # Determine plot modes
-        modes: List[Optional[str]] = ["box", "bar", "line"] if metric in {"cdlib_modularity", "customize_q0_modularity"} else [None]
+        # Determine plot modes from config or fallback to defaults
+        cfg = ConfigManager()
+        plotter_cfg = cfg.plotter(self.benchmark_type)
+        metric_modes = plotter_cfg.get("metric_modes", {})
+        
+        if metric in metric_modes:
+            modes = metric_modes[metric]
+            # Handle case where modes might be a string instead of list
+            if isinstance(modes, str):
+                modes = [modes]
+        else:
+            # Default behavior: box/bar/line for modularity metrics, None (line) for others
+            modes: List[Optional[str]] = ["box", "bar", "line"] if metric in {"cdlib_modularity", "customize_q0_modularity"} else [None]
+        # modes: List[Optional[str]] = ["box", "bar", "line"] if metric in {"cdlib_modularity", "customize_q0_modularity", "nmi"} else [None]
 
         # Get dataset info
         dataset_info = cfg.dataset_info(self.benchmark_type)
@@ -357,6 +378,9 @@ class GroupedPlotter:
                 self._plot_modularity(ax, data, algs, metric, mode)
             elif metric == "runtime":
                 self._plot_runtime(ax, data, algs, metric)
+            elif mode is not None and metric in {"nmi"}:
+                # For metrics that support modal plotting (box/bar/line) like nmi
+                self._plot_modularity(ax, data, algs, metric, mode)
             else:
                 self._plot_timeseries(ax, data, algs, metric)
 
@@ -427,8 +451,10 @@ class GroupedPlotter:
             x = np.arange(len(labels))
             ax.plot(x, means, color="black", linestyle="--", linewidth=2, marker="o", markersize=4)
             ax.set_xticks([])
-
-        ax.set_ylabel(metric)
+        metric_display = metric_display_name(
+            metric=metric, benchmark_type=self.benchmark_type
+        )
+        ax.set_ylabel(metric_display)
         ax.grid(axis="y", alpha=0.3)
 
     def _plot_runtime(self, ax, data: Dict, algs: List[str], metric: str):
@@ -444,7 +470,8 @@ class GroupedPlotter:
                    ha="center", va="bottom", fontsize=8, fontweight="bold")
 
         ax.set_xticks([])
-        ax.set_ylabel("seconds (s)")
+        metric_display = metric_display_name(metric, self.benchmark_type)
+        ax.set_ylabel(metric_display)
         ax.grid(axis="y", alpha=0.3)
 
     def _plot_timeseries(self, ax, data: Dict, algs: List[str], metric: str):
@@ -467,7 +494,8 @@ class GroupedPlotter:
             ax.plot(steps, means, marker=marker, color=color, linewidth=2, markersize=4)
 
         ax.set_xlabel("step")
-        ax.set_ylabel(metric)
+        metric_display = metric_display_name(metric, self.benchmark_type)
+        ax.set_ylabel(metric_display)
         ax.grid(alpha=0.3)
 
     def _build_legend(self, alg_info: Dict) -> tuple:

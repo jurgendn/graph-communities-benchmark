@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 from tqdm.auto import tqdm
 
 from src.algorithms.factory import load_algorithms
-from src.dataloader.static_loader import load_static_as_temporal, load_builtin_graph, BUILTIN_GRAPHS
+from src.dataloader.static_loader import load_static_as_temporal, load_builtin_graph, load_lfr_single_snapshot, BUILTIN_GRAPHS
 from src.pipeline_utils import run_algorithm, evaluate, log_results
 
 load_dotenv()
@@ -129,20 +129,30 @@ def main() -> None:
         dataset_name = args.dataset if args.dataset != "static" else args.builtin
     elif args.config:
         cfg = _load_static_config(args.config)
-        delimiter = cfg.get("delimiter", " ")
-        if delimiter == "tab":
-            delimiter = "\t"
-        preload_fraction = args.preload_fraction
-        if preload_fraction is None:
-            preload_fraction = cfg.get("preload_fraction", 1.0)
-        tg = load_static_as_temporal(
-            file_path=cfg["path"],
-            source_idx=cfg.get("source_idx", 0),
-            target_idx=cfg.get("target_idx", 1),
-            delimiter=delimiter,
-            preload_fraction=preload_fraction,
-            ground_truth_attr=cfg.get("ground_truth_attr"),
-        )
+        dataset_type = cfg.get("type", "edge_list")
+
+        if dataset_type == "lfr":
+            # Load LFR single snapshot (t0)
+            tg = load_lfr_single_snapshot(
+                folder_path=cfg["path"],
+                ground_truth_attr=cfg.get("ground_truth_attr", "communities"),
+            )
+        else:
+            # Load edge list / GML file (existing behavior)
+            delimiter = cfg.get("delimiter", " ")
+            if delimiter == "tab":
+                delimiter = "\t"
+            preload_fraction = args.preload_fraction
+            if preload_fraction is None:
+                preload_fraction = cfg.get("preload_fraction", 1.0)
+            tg = load_static_as_temporal(
+                file_path=cfg["path"],
+                source_idx=cfg.get("source_idx", 0),
+                target_idx=cfg.get("target_idx", 1),
+                delimiter=delimiter,
+                preload_fraction=preload_fraction,
+                ground_truth_attr=cfg.get("ground_truth_attr"),
+            )
         dataset_name = args.dataset if args.dataset != "static" else cfg.get("dataset_name", args.config)
     elif args.dataset_path:
         delimiter = args.delimiter

@@ -10,6 +10,7 @@ The returned TemporalGraph has ``len()==1``, so ``iter_snapshots()`` yields
 exactly once, making it fully compatible with the existing temporal pipeline
 (``run_algorithm``, ``evaluate``, ``log_results``).
 """
+import glob
 import os
 from typing import Optional
 
@@ -144,6 +145,48 @@ def load_builtin_graph(name: str) -> TemporalGraph:
     gt_attr = entry.get("ground_truth_attr")
     if gt_attr:
         gt = _extract_ground_truth(G, gt_attr)
+        if gt is not None:
+            gt_clusterings = [gt]
+
+    return TemporalGraph(
+        base_graph=G,
+        steps=[],
+        _ground_truth_clusterings=gt_clusterings,
+    )
+
+
+def load_lfr_single_snapshot(
+    folder_path: str,
+    ground_truth_attr: str = "communities",
+) -> TemporalGraph:
+    """Load the first snapshot (t0) from an LFR benchmark folder as a static graph.
+
+    Args:
+        folder_path: Path to LFR folder containing snapshot_t*.gml files
+        ground_truth_attr: Node attribute for ground truth communities
+
+    Returns:
+        TemporalGraph with base_graph as snapshot_t0 and steps=[] (single snapshot)
+    """
+    # Find snapshot_t0.gml
+    t0_path = os.path.join(folder_path, "snapshot_t0.gml")
+    if not os.path.exists(t0_path):
+        # Fallback: find all snapshot files and pick first by index
+        gml_files = glob.glob(os.path.join(folder_path, "snapshot_t*.gml"))
+        if not gml_files:
+            raise ValueError(f"No snapshot_t*.gml files found in {folder_path}")
+        # Sort by index and pick first
+        gml_files.sort()
+        t0_path = gml_files[0]
+
+    # Load graph
+    G = nx.read_gml(t0_path)
+    G = nx.convert_node_labels_to_integers(G)
+
+    # Extract ground truth
+    gt_clusterings = None
+    if ground_truth_attr:
+        gt = _extract_ground_truth(G, ground_truth_attr)
         if gt is not None:
             gt_clusterings = [gt]
 

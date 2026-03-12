@@ -175,18 +175,58 @@ datasets:
 | `target_datasets` | Datasets shown by `./scripts/benchmark_static.sh --list` and used by static `--all` |
 | `path` | Local dataset file path |
 | `dataset_name` | Label sent to logs and CLI output |
+| `type` | `edge_list` or `lfr` for static config entries |
 | `source_idx` | Source column index |
 | `target_idx` | Target column index |
 | `delimiter` | Field separator |
 | `preload_fraction` | Fraction of edges loaded into the single static snapshot |
 | `ground_truth_attr` | Node attribute used to build ground truth when available |
 
+### Static dataset types
+
+Static entries may use:
+
+- `edge_list`: load one file as a single static graph
+- `lfr`: load one labeled `snapshot_t*.gml` file from a folder as the single static graph
+
+Example:
+
+```yaml
+datasets:
+  synthetic-n-5000-1:
+    dataset_name: synthetic_n_5000_1
+    path: data/synthetic_n_5000_1/
+    type: "lfr"
+    ground_truth_attr: "communities"
+```
+
 ### Notes
 
-- Static entries do not need a `type` because they are always loaded through `main_static.py` as one-snapshot temporal graphs.
 - `scripts/benchmark_static.sh` reads `datasets` from this file.
 - Values in `common` are reused through YAML anchors.
 - Paths under `data/` refer to local files; the repository does not track the data directory.
+- For `type: lfr`, static benchmarking uses the first available snapshot as one static graph; it does not reconstruct temporal steps.
+
+## Synthetic LFR naming convention
+
+For generated LFR datasets, prefer concise names that preserve the main structural parameters:
+
+```text
+synthetic-n-<nodes>-k<avg_degree>-mu<mixing>-c<min>-<max>
+```
+
+Example:
+
+```text
+synthetic-n-10000-k4-mu0.1-c50-200
+```
+
+Recommended interpretation:
+
+- `n-10000`: number of nodes
+- `k4`: target average degree
+- `mu0.1`: LFR mixing parameter
+- `c50-200`: community size range
 
 ## `config/visualization_dynamic.yaml` and `config/visualization_static.yaml`
 

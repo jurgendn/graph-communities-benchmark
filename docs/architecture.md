@@ -8,7 +8,7 @@ The Graph Communities Benchmark supports three primary benchmarking workflows:
 
 1. **Real-world benchmarking** — Edge list files → temporal snapshots → benchmark
 2. **Labeled benchmarking** — `.gml` snapshots → temporal graph → benchmark with ground truth
-3. **Static benchmarking** — Static edge list / built-in graph → one-snapshot `TemporalGraph` → benchmark
+3. **Static benchmarking** — Static edge list / built-in graph / single LFR snapshot → one-snapshot `TemporalGraph` → benchmark
 
 ---
 
@@ -67,7 +67,8 @@ GML snapshot folder (snapshot_t0.gml, snapshot_t1.gml, ...)
 | `build_graph()` | Shared weighted graph construction helper |
 | `load_txt_dataset()` | Parse txt/csv edge lists into a temporal `TemporalGraph` |
 | `load_lfr_folder()` | Load a series of `.gml` snapshots |
-| `load_static_as_temporal()` | Load a static graph as `TemporalGraph(..., steps=[])` |
+| `load_static_as_temporal()` | Load a static edge-list graph as `TemporalGraph(..., steps=[])` |
+| `load_lfr_single_snapshot()` | Load one labeled LFR snapshot as a one-snapshot `TemporalGraph` |
 | `load_builtin_graph()` | Load built-in static graphs such as `karate` |
 
 ### Core Abstractions — `src/factory/`
@@ -197,8 +198,8 @@ datasets:
 
 | Aspect | Real-World (Edge List) | Labeled (`.gml` Snapshots) | Static Graph |
 |--------|------------------------|-----------------------------|--------------|
-| Data source | Single txt/csv file | Folder of `.gml` files | Single file or built-in graph |
-| Loader | `load_txt_dataset()` | `load_lfr_folder()` | `load_static_as_temporal()` |
+| Data source | Single txt/csv file | Folder of `.gml` files | Single file, built-in graph, or one LFR snapshot |
+| Loader | `load_txt_dataset()` | `load_lfr_folder()` | `load_static_as_temporal()` or `load_lfr_single_snapshot()` |
 | Temporal construction | Batches edges by count | Diffs consecutive snapshots | `steps=[]` |
 | Ground truth | Usually none | Precomputed from node attributes | Optional one clustering |
 | Evaluation | Modularity | Modularity + NMI | Modularity + optional NMI |

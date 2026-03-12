@@ -117,6 +117,7 @@ From static dataset config:
 ```bash
 ./scripts/benchmark_static.sh --list
 ./scripts/benchmark_static.sh karate 1
+./scripts/benchmark_static.sh synthetic-n-5000-1 1
 ```
 
 From a built-in graph with ground truth:
@@ -241,12 +242,21 @@ Note: `data/`, `experiments/`, and `assets/` are gitignored in this repository.
 ## Notes
 
 - `main.py` is the temporal and LFR entry point; it can run both snapshot and temporal algorithms.
-- `main_static.py` is the static entry point.
+- `main_static.py` is the static entry point and can also load one labeled LFR snapshot from a configured `type: lfr` folder.
 - Static graphs reuse the same evaluation and logging pipeline by loading as `TemporalGraph(base_graph=G, steps=[])`.
+- In static mode, configured LFR datasets load `snapshot_t0.gml` when present; otherwise the earliest `snapshot_t*.gml` file is used as the single benchmark snapshot.
 - Comet projects are now mode-specific, using `graph-community-detection-dynamic-*` and `graph-community-detection-static-*` names.
 - Shared model code lives under `src/models/common/`; algorithm implementations live under `src/models/static/` and `src/models/dynamic/`.
 - Some CDlib algorithms may require optional third-party packages beyond `requirements.txt`.
 - The `.env.example` file includes `COMET_PROJECT_NAME`, but current benchmark runs derive the Comet project name from the dataset automatically.
+
+## Synthetic LFR Naming
+
+For generated LFR datasets, prefer short keys that expose the main structural parameters:
+
+- Recommended pattern: `synthetic-n-<nodes>-k<avg_degree>-mu<mixing>-c<min>-<max>`
+- Example: `synthetic-n-10000-k4-mu0.1-c50-200`
+- Use the hyphenated key in YAML config and shell commands; use the underscore version for folder names when needed.
 
 ## License
 

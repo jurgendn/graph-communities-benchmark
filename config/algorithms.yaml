@@ -2,14 +2,13 @@
 
 # Snapshot algorithms run independently on each snapshot.
 target_snapshot_algorithms:
-  - vast-cosine-overlap
+  - vast-pmo
   - coach
   # - copra
   # - big_clam
   - core_expansion
   - graph_entropy
   # - percomvc
-  # - big_clam
   # - slpa
 
 # Temporal algorithms consume the full temporal graph.
@@ -161,6 +160,20 @@ snapshot_algorithms:
     clustering_type: "overlapping"
     metadata: {}
     description: "VAST Cosine Overlap for overlapping community detection"
+
+  vast-pmo:
+    module: "src.models.static.overlap.vast_pmo"
+    function: "vast_pmo"
+    params:
+      louvain_resolution: 0.75
+      theta: 0.85
+      lambda_param: 0.25
+      epsilon: 1.0e-05
+      r: 3
+      n_jobs: -1
+    clustering_type: "overlapping"
+    metadata: {}
+    description: "VAST PMO for overlapping community detection"
 
   copra:
     module: "src.models.static.overlap.copra"

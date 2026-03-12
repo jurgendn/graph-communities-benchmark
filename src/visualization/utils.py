@@ -135,6 +135,7 @@ def get_dataset_info(benchmark_type: str = DEFAULT_MODE) -> Dict:
         "synthetic": common.get("synthetic_datasets", []),
         "real_world": common.get("real_world_datasets", []),
         "name_mapping": common.get("projects_name_mapping", {}),
+        "metric_name_mapping": common.get("metric_name_mapping", {}),
     }
 
 
@@ -142,6 +143,12 @@ def project_display_name(project: str, benchmark_type: str = DEFAULT_MODE) -> st
     """Get display name for project."""
     info = get_dataset_info(benchmark_type)
     return info.get("name_mapping", {}).get(project, project)
+
+
+def metric_display_name(metric: str, benchmark_type: str = DEFAULT_MODE) -> str:
+    """Get display name for metric."""
+    info = get_dataset_info(benchmark_type)
+    return info.get("metric_name_mapping", {}).get(metric, metric)
 
 
 def get_selected_algorithms(benchmark_type: str = DEFAULT_MODE) -> List[str]:

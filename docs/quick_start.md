@@ -101,6 +101,7 @@ Run a configured static dataset:
 ```bash
 ./scripts/benchmark_static.sh --list
 ./scripts/benchmark_static.sh karate 1
+./scripts/benchmark_static.sh synthetic-n-5000-1 1
 ```
 
 Use the config-defined preload fraction, or override it from the CLI:
@@ -122,6 +123,7 @@ Notes:
 - `main_static.py` automatically skips temporal algorithms such as `tiles`.
 - `benchmark_static.sh` reads dataset values from [`config/static_dataset_config.yaml`](../config/static_dataset_config.yaml).
 - `--preload-fraction` overrides the config value and benchmarks a partial static graph without creating temporal steps.
+- When a static config entry has `type: lfr`, `main_static.py` loads a single labeled snapshot from the folder and benchmarks it as one static graph.
 
 ## Run On LFR `.gml` Snapshots
 
@@ -135,6 +137,14 @@ python main.py \
 ```
 
 The loader uses the first snapshot as the base graph, derives temporal changes from later snapshots, and precomputes ground-truth clusterings.
+
+For static evaluation of the same dataset:
+
+```bash
+./scripts/benchmark_static.sh synthetic-n-5000-1 1
+```
+
+This loads one labeled snapshot from the configured folder and evaluates static algorithms only.
 
 ## Generate Plots
 

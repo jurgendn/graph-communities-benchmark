@@ -44,7 +44,13 @@ def main():
         if args.metric:
             metrics = [args.metric]
         else:
-            metrics = cfg.metric_keys(benchmark_type) or ["num_communities", "cdlib_modularity", "customize_q0_modularity", "runtime"]
+            metrics = cfg.metric_keys(benchmark_type) or [
+                "num_communities",
+                "cdlib_modularity",
+                "nmi",
+                "customize_q0_modularity",
+                "runtime",
+            ]
 
         plotter = GroupedPlotter(
             benchmark_type=benchmark_type,
