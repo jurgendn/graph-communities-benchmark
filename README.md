@@ -21,6 +21,7 @@ A benchmarking framework for dynamic and static community detection. The project
 | --- | --- |
 | [Installation Guide](docs/installation.md) | Environment setup and dependencies |
 | [Quick Start](docs/quick_start.md) | Common commands for benchmarks and plots |
+| [Dataset Preparation Guide](docs/dataset_preparation.md) | Supported file formats and config examples |
 | [Configuration Guide](docs/configuration.md) | YAML config files and key fields |
 | [Metrics Documentation](docs/metrics.md) | Logged metrics and ground-truth evaluation |
 | [Visualization Guide](docs/visualization.md) | Fetching Comet runs and generating plots |
@@ -81,6 +82,8 @@ COMET_WORKSPACE=your_workspace_here
 ```
 
 ### 3. Run a dynamic benchmark
+
+If you are bringing your own input files, see [Dataset Preparation Guide](docs/dataset_preparation.md) for the expected edge-list and LFR layouts.
 
 ```bash
 python main.py \
@@ -232,6 +235,7 @@ Details are in [docs/metrics.md](docs/metrics.md).
 ## Data And Outputs
 
 - Raw datasets are expected under `data/` by default.
+- See [docs/dataset_preparation.md](docs/dataset_preparation.md) for supported dataset formats and config examples.
 - Raw Comet exports are written under `experiments/dynamic/raw/` and `experiments/static/raw/`.
 - Merged plot-ready data is written under `experiments/dynamic/merged/` and `experiments/static/merged/`.
 - Generated figures are written under `assets/dynamic/` and `assets/static/`.

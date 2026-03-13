@@ -130,6 +130,8 @@ python -c "from src.algorithms.factory import load_algorithms; print(sorted(load
 
 ## Add A New Dataset
 
+Before adding config entries, make sure the local files match the expected loader format in the [Dataset Preparation Guide](dataset_preparation.md).
+
 ### Temporal dataset
 
 1. Place the local file under `data/`.

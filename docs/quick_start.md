@@ -11,6 +11,8 @@ This guide covers the fastest path to running benchmarks and generating plots.
 
 Use `main.py` for temporal/LFR runs and `main_static.py` for static runs.
 
+If you need to stage a new local dataset first, see the [Dataset Preparation Guide](dataset_preparation.md).
+
 ## Run A Benchmark With `main.py`
 
 ```bash
