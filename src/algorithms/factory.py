@@ -1,102 +1,140 @@
-"""Factory for loading and instantiating community detection algorithms."""
+"""
+Factory for loading and instantiating community detection algorithms.
+
+Loads algorithms from the registry (populated by ``@register`` decorators)
+and uses YAML only for selecting which algorithms to run and optionally
+overriding default parameters.
+
+Algorithm modules must be imported before ``load_algorithms`` is called so
+that their ``@register`` decorators execute. The ``_ensure_registrations``
+helper handles this automatically.
+"""
+from __future__ import annotations
+
 import importlib
-from typing import Dict, Tuple
+from typing import Dict
 
 import yaml
 
 from src.algorithms.base import CommunityDetectionAlgorithm
+from src.algorithms.registry import ALGORITHM_REGISTRY
 from src.algorithms.wrappers import DynamicMethodWrapper, StaticMethodWrapper
 
 
-def _read_algorithm_sections(config: dict) -> Tuple[list[str], dict, list[str], dict]:
-    if "snapshot_algorithms" in config or "temporal_algorithms" in config:
-        return (
-            config.get("target_snapshot_algorithms", []),
-            config.get("snapshot_algorithms", {}),
-            config.get("target_temporal_algorithms", []),
-            config.get("temporal_algorithms", {}),
-        )
+# Modules that contain @register calls.  Importing them populates the registry.
+_REGISTRATION_MODULES = [
+    # Custom algorithms
+    "src.models.static.overlap.big_clam",
+    "src.models.static.overlap.copra",
+    "src.models.static.overlap.cosine_overlap",
+    "src.models.static.overlap.ndocd",
+    "src.models.static.overlap.vast_pmo",
+    "src.models.dynamic.overlap.tiles",
+    "src.models.dynamic.crisp.df_louvain",
+    "src.models.static.crisp.static_louvain",
+    # CDlib adapters
+    "src.algorithms.cdlib_adapters",
+]
 
-    if "static_algorithms" in config or "dynamic_algorithms" in config:
-        return (
-            config.get("target_static_algorithms", []),
-            config.get("static_algorithms", {}),
-            config.get("target_dynamic_algorithms", []),
-            config.get("dynamic_algorithms", {}),
-        )
 
-    target = config.get("target_algorithms", [])
-    all_algorithms = config.get("algorithms", {})
-
-    static_target = [
-        name for name in target if all_algorithms.get(name, {}).get("type", "static") == "static"
-    ]
-    dynamic_target = [
-        name for name in target if all_algorithms.get(name, {}).get("type") == "dynamic"
-    ]
-    static_algorithms = {
-        name: {k: v for k, v in algo.items() if k != "type"}
-        for name, algo in all_algorithms.items()
-        if algo.get("type", "static") == "static"
-    }
-    dynamic_algorithms = {
-        name: {k: v for k, v in algo.items() if k != "type"}
-        for name, algo in all_algorithms.items()
-        if algo.get("type") == "dynamic"
-    }
-    return static_target, static_algorithms, dynamic_target, dynamic_algorithms
+def _ensure_registrations() -> None:
+    """Import all algorithm modules so their ``@register`` decorators fire."""
+    for module_path in _REGISTRATION_MODULES:
+        try:
+            importlib.import_module(module_path)
+        except ImportError as exc:
+            print(f"Warning: Could not import '{module_path}': {exc}. Skipping.")
 
 
 def load_algorithms(config_path: str = "config/algorithms.yaml") -> Dict[str, dict]:
-    """Load and instantiate all target algorithms listed in the config file."""
-    with open(config_path) as f:
-        config = yaml.safe_load(f)
+    """
+    Load and instantiate all target algorithms listed in the YAML config.
 
-    snapshot_target, snapshot_algorithms, temporal_target, temporal_algorithms = _read_algorithm_sections(config)
+    The YAML config selects which registered algorithms to run and optionally
+    overrides their default parameters.  Algorithm identity and metadata live
+    in the registry (populated via ``@register``).
+
+    YAML shape::
+
+        target_snapshot_algorithms:
+          - big_clam
+          - angel
+
+        target_temporal_algorithms:
+          - tiles
+
+        algorithm_params:          # optional overrides
+          big_clam:
+            num_communities: 10
+
+    Raises:
+        ValueError: If a YAML-referenced algorithm name is not in the registry.
+    """
+    # Step 1: ensure all @register decorators have executed
+    _ensure_registrations()
+
+    # Step 2: read YAML run config
+    with open(config_path) as f:
+        config = yaml.safe_load(f) or {}
+
+    snapshot_targets = config.get("target_snapshot_algorithms") or []
+    temporal_targets = config.get("target_temporal_algorithms") or []
+    overrides = config.get("algorithm_params") or {}
 
     algorithms: Dict[str, dict] = {}
 
-    for algo_type, target_names, algo_defs in (
-        ("static", snapshot_target, snapshot_algorithms),
-        ("dynamic", temporal_target, temporal_algorithms),
-    ):
-        for name in target_names:
-            if name not in algo_defs:
-                section_name = "snapshot_algorithms" if algo_type == "static" else "temporal_algorithms"
-                print(f"Warning: '{name}' not found in {section_name} config, skipping.")
-                continue
+    all_targets = [
+        *[(name, "static") for name in snapshot_targets],
+        *[(name, "dynamic") for name in temporal_targets],
+    ]
 
-            algo_config = algo_defs[name]
-            module_path = algo_config.get("module", "cdlib.algorithms")
-            func_name = algo_config["function"]
-            params = algo_config.get("params", {}) or {}
-            clustering_type = algo_config.get("clustering_type", "overlap")
+    for name, expected_type in all_targets:
+        # Validate against registry
+        if name not in ALGORITHM_REGISTRY:
+            available = ", ".join(sorted(ALGORITHM_REGISTRY.keys()))
+            raise ValueError(
+                f"Unknown algorithm '{name}' in YAML config. "
+                f"Not found in registry. Available: {available}"
+            )
 
-            try:
-                module = importlib.import_module(module_path)
-                func = getattr(module, func_name)
-            except (ImportError, AttributeError) as exc:
-                print(
-                    f"Warning: Could not load '{func_name}' from '{module_path}': {exc}. "
-                    f"Skipping '{name}'."
-                )
-                continue
+        spec = ALGORITHM_REGISTRY[name]
 
-            if isinstance(func, type):
-                if issubclass(func, CommunityDetectionAlgorithm):
-                    wrapper = func
-                else:
-                    instance = func(**params)
-                    wrapper = DynamicMethodWrapper(instance, {}) if algo_type == "dynamic" else StaticMethodWrapper(instance, {})
+        # Warn if YAML puts it in the wrong target list
+        if spec.algo_type != expected_type:
+            print(
+                f"Warning: Algorithm '{name}' is registered as '{spec.algo_type}' "
+                f"but listed under target_{expected_type}_algorithms in YAML. "
+                f"Using registered type '{spec.algo_type}'."
+            )
+
+        # Merge default params with YAML overrides
+        params = {**spec.default_params, **overrides.get(name, {})}
+        target = spec.target
+
+        # Instantiate wrapper
+        if isinstance(target, type):
+            instance = target(**params)
+            if isinstance(instance, CommunityDetectionAlgorithm):
+                wrapper = instance
             else:
-                wrapper = DynamicMethodWrapper(func, params) if algo_type == "dynamic" else StaticMethodWrapper(func, params)
+                wrapper = (
+                    DynamicMethodWrapper(instance, {})
+                    if spec.algo_type == "dynamic"
+                    else StaticMethodWrapper(instance, {})
+                )
+        else:
+            wrapper = (
+                DynamicMethodWrapper(target, params)
+                if spec.algo_type == "dynamic"
+                else StaticMethodWrapper(target, params)
+            )
 
-            algorithms[name] = {
-                "wrapper": wrapper,
-                "type": algo_type,
-                "clustering_type": clustering_type,
-                "params": params,
-                "config": algo_config,
-            }
+        algorithms[name] = {
+            "wrapper": wrapper,
+            "type": spec.algo_type,
+            "clustering_type": spec.clustering_type,
+            "params": params,
+            "description": spec.description,
+        }
 
     return algorithms

@@ -2,23 +2,23 @@
 # Each dataset entry contains the parameters required for benchmarking
 
 target_datasets:
-  - college-msg
-  - soc-sign-bitcoinalpha
-  - soc-sign-bitcoinotc
-  - ca-astroph
-  - ca-condmat
-  - ca-hepph
-  - email-enron-large
+  # - college-msg
+  # - soc-sign-bitcoinalpha
+  # - soc-sign-bitcoinotc
+  # - ca-astroph
+  # - ca-condmat
+  # - ca-hepph
+  # - email-enron-large
   - edit-enwikibooks
-  - ia-frwikinews-user-edits
-  - bio-wormnet-v3
-  - scc-infect-dublin
+  # - ia-frwikinews-user-edits
+  # - bio-wormnet-v3
+  # - scc-infect-dublin
   # - ia-contacts-dublin
   # - ia-digg-reply
   # - scc-infect-hyper
   # - scc-retweet
   # - scc-tweeter-copen
-  - sx-askubuntu
+  # - sx-askubuntu
   # - sx-mathoverflow
   # - lfr-large-community-size
   # - lfr-small-community-size
@@ -27,7 +27,9 @@ target_datasets:
 common: &common_settings
   max_steps: 9
   initial_fraction: 0.4
-  batch_range: 0.0001
+  # batch_range: 0.001 # Large
+  # batch_range: 0.0001 # Medium
+  batch_range: 0.00001 # Small
 
 datasets:
   email-enron-large:

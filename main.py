@@ -10,15 +10,13 @@ Supports both static algorithms (per-snapshot) and dynamic algorithms
 Usage:
     python main.py [--dataset CollegeMsg] [--max-steps 10] ...
 """
-import os
-
 import comet_ml  # noqa: F401 — must be imported before Experiment
 from dotenv import load_dotenv
 from tqdm.auto import tqdm
 
 from src.algorithms.factory import load_algorithms
-from src.dataloader.data_reader import load_txt_dataset, load_lfr_folder
-from src.pipeline_utils import run_algorithm, evaluate, log_results
+from src.data.data_reader import load_txt_dataset, load_lfr_folder
+from src.core.pipeline import run_algorithm, evaluate, log_results
 from src.utils.arg_parser import parse_args
 
 load_dotenv()

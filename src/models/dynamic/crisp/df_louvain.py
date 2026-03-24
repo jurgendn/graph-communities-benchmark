@@ -5,9 +5,10 @@ import networkx as nx
 from cdlib import NodeClustering
 
 from src.algorithms.base import CommunityDetectionAlgorithm
-from src.evaluations.metrics import compute_modularity
-from src.factory.communities import IntermediateResults, MethodDynamicResults
-from src.factory.factory import TemporalGraph
+from src.algorithms.registry import register
+from src.evaluation.metrics import compute_modularity
+from src.core.results import IntermediateResults, MethodDynamicResults
+from src.core.temporal_graph import TemporalGraph
 from src.models.common.louvain_base import LouvainMixin
 
 
@@ -194,6 +195,13 @@ class DynamicFrontierLouvain(CommunityDetectionAlgorithm, LouvainMixin):
         return results.clusterings
 
 
+@register(
+    name="df_louvain",
+    algo_type="dynamic",
+    clustering_type="crisp",
+    default_params={},
+    description="Dynamic Frontier Louvain for crisp community detection in temporal graphs",
+)
 def run_df_louvain(tg: TemporalGraph) -> MethodDynamicResults:
     """
     Run DynamicFrontierLouvain on a full TemporalGraph.

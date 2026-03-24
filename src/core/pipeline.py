@@ -14,9 +14,9 @@ from cdlib import NodeClustering
 from comet_ml import Experiment
 from dotenv import load_dotenv
 
-from src.evaluations.metrics import compute_modularity, compute_nmi_from_ground_truth
-from src.factory.communities import IntermediateResults, MethodDynamicResults
-from src.factory.factory import TemporalGraph
+from src.evaluation.metrics import compute_modularity, compute_nmi_from_ground_truth
+from src.core.results import IntermediateResults, MethodDynamicResults
+from src.core.temporal_graph import TemporalGraph
 
 load_dotenv()
 
@@ -163,7 +163,8 @@ def log_results(
     """
     experiment = Experiment(
         api_key=os.getenv("COMET_API_KEY"),
-        project_name=f"graph-community-detection-{getattr(args, 'benchmark_mode', 'dynamic')}-{args.dataset.lower()}",
+        # project_name=f"graph-community-detection-{getattr(args, 'benchmark_mode', 'dynamic')}-{args.dataset.lower()}",
+        project_name=f"graph-community-detection-overlapping-{args.dataset.lower()}",
         workspace=os.getenv("COMET_WORKSPACE"),
     )
 

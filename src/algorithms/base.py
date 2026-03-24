@@ -6,7 +6,7 @@ from typing import List
 
 from cdlib import NodeClustering
 
-from src.factory.factory import TemporalGraph
+from src.core.temporal_graph import TemporalGraph
 
 
 class CommunityDetectionAlgorithm(ABC):

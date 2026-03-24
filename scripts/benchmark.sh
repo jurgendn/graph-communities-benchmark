@@ -86,7 +86,7 @@ run_dataset_benchmark() {
 	local cmd="python3 $script --dataset $dataset_name --max-steps $max_steps --num-runs $num_runs"
 
 	if [[ "$type" == "edge_list" ]]; then
-		cmd="$cmd --dataset-path $path --source-idx $source_idx --target-idx $target_idx --batch-range $batch_range --initial-fraction $initial_fraction"
+		cmd="$cmd --dataset-path $path --source-idx $source_idx --target-idx $target_idx --batch-range $batch_range --initial-fraction $initial_fraction --delimiter \"$delimiter\""
 	else
 		cmd="$cmd --lfr-folder $path --ground-truth-attr $ground_truth_attr"
 	fi

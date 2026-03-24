@@ -12,10 +12,10 @@ from typing import Tuple
 import networkx as nx
 from cdlib import NodeClustering, evaluation
 
-from src.evaluations.onmi_fast import (
+from src.evaluation.onmi_fast import (
     overlapping_normalized_mutual_information_MGH_fast,
 )
-from src.evaluations.target_modularity import overlapping_modularity_q0
+from src.evaluation.target_modularity import overlapping_modularity_q0
 
 CLUSTERING_TYPES = ("crisp", "overlapping")
 

@@ -2,11 +2,16 @@
 # Each dataset entry contains the parameters required for single-snapshot benchmarking.
 
 target_datasets:
-  - synthetic-n10000-mu0.2-on200500-om2-4-k50_100-c50_200
-  - synthetic-n10000-mu0.3-on200500-om2-4-k50_100-c50_200
-  - synthetic-n10000-mu0.4-on200500-om2-4-k50_100-c50_200
-  - synthetic-n10000-mu0.1-on200500-om2-4-k50_100-c50_200
-  - synthetic-n10000-mu0.5-on200500-om2-4-k50_100-c50_200
+  - synthetic-n800-mu0.05-on00-om2-2-k6_10-c70_100
+  # - synthetic-n800-mu0.05-on11-om2-2-k6_10-c70_100
+  # - synthetic-n800-mu0.05-on80100-om2-2-k6_10-c70_100
+  # - synthetic-n1000-mu0.05-on50100-om2-2-k20_60-c100_250
+  # - synthetic-n1000-mu0.08-on100200-om2-3-k24_100-c80_200
+  # - synthetic-n10000-mu0.2-on200500-om2-4-k50_100-c50_200
+  # - synthetic-n10000-mu0.3-on200500-om2-4-k50_100-c50_200
+  # - synthetic-n10000-mu0.4-on200500-om2-4-k50_100-c50_200
+  # - synthetic-n10000-mu0.1-on200500-om2-4-k50_100-c50_200
+  # - synthetic-n10000-mu0.5-on200500-om2-4-k50_100-c50_200
   # - synthetic-n10000-mu0.25-on200500-om2-4-k50_100-c50_200
   # - college-msg
   # - soc-sign-bitcoinalpha
@@ -267,6 +272,72 @@ datasets:
     delimiter: " "
     ground_truth_attr: "communities"
     path: "data/lfr-datasets/synthetic_n10000_mu0.25_on200500_om2_4_k50_100_c50_200"
+    source_idx: 0
+    target_idx: 1
+    type: "lfr"
+
+  # synthetic_n1000_mu0.08_on100200_om2_3_k24_100_c80_200
+  synthetic-n1000-mu0.08-on100200-om2-3-k24_100-c80_200:
+    <<: *common_settings
+    dataset_name: "synthetic_n1000_mu0.08_on100200_om2_3_k24_100_c80_200"
+    delimiter: " "
+    ground_truth_attr: "communities"
+    path: "data/lfr-datasets/synthetic_n1000_mu0.08_on100200_om2_3_k24_100_c80_200"
+    source_idx: 0
+    target_idx: 1
+    type: "lfr"
+
+  # synthetic_n1000_mu0.05_on50100_om2_2_k20_60_c100_250
+  synthetic-n1000-mu0.05-on50100-om2-2-k20_60-c100_250:
+    <<: *common_settings
+    dataset_name: "synthetic_n1000_mu0.05_on50100_om2_2_k20_60_c100_250"
+    delimiter: " "
+    ground_truth_attr: "communities"
+    path: "data/lfr-datasets/synthetic_n1000_mu0.05_on50100_om2_2_k20_60_c100_250"
+    source_idx: 0
+    target_idx: 1
+    type: "lfr"
+
+  # synthetic_n1000_mu0.05_on100200_om2_3_k24_100_c80_200
+  synthetic-n1000-mu0.05-on100200-om2-3-k24_100-c80_200:
+    <<: *common_settings
+    dataset_name: "synthetic_n1000_mu0.05_on100200_om2_3_k24_100_c80_200"
+    delimiter: " "
+    ground_truth_attr: "communities"
+    path: "data/lfr-datasets/synthetic_n1000_mu0.05_on100200_om2_3_k24_100_c80_200"
+    source_idx: 0
+    target_idx: 1
+    type: "lfr"
+
+  # synthetic_n800_mu0.05_on80100_om2_2_k6_10_c70_100
+  synthetic-n800-mu0.05-on80100-om2-2-k6_10-c70_100:
+    <<: *common_settings
+    dataset_name: "synthetic_n800_mu0.05_on80100_om2_2_k6_10_c70_100"
+    delimiter: " "
+    ground_truth_attr: "communities"
+    path: "data/lfr-datasets/synthetic_n800_mu0.05_on80100_om2_2_k6_10_c70_100"
+    source_idx: 0
+    target_idx: 1
+    type: "lfr"
+
+  # synthetic_n800_mu0.05_on11_om2_2_k6_10_c70_100
+  synthetic-n800-mu0.05-on11-om2-2-k6_10-c70_100:
+    <<: *common_settings
+    dataset_name: "synthetic_n800_mu0.05_on11_om2_2_k6_10_c70_100"
+    delimiter: " "
+    ground_truth_attr: "communities"
+    path: "data/lfr-datasets/synthetic_n800_mu0.05_on11_om2_2_k6_10_c70_100"
+    source_idx: 0
+    target_idx: 1
+    type: "lfr"
+  
+  # synthetic_n800_mu0.05_on00_om2_2_k6_10_c70_100
+  synthetic-n800-mu0.05-on00-om2-2-k6_10-c70_100:
+    <<: *common_settings
+    dataset_name: "synthetic_n800_mu0.05_on00_om2_2_k6_10_c70_100"
+    delimiter: " "
+    ground_truth_attr: "communities"
+    path: "data/lfr-datasets/synthetic_n800_mu0.05_on00_om2_2_k6_10_c70_100"
     source_idx: 0
     target_idx: 1
     type: "lfr"

@@ -9,9 +9,17 @@ import numpy as np
 from cdlib import NodeClustering
 
 from src.algorithms.base import CommunityDetectionAlgorithm
-from src.factory.factory import TemporalGraph
+from src.algorithms.registry import register
+from src.core.temporal_graph import TemporalGraph
 
 
+@register(
+    name="copra",
+    algo_type="static",
+    clustering_type="overlapping",
+    default_params={"iterations": 10, "max_communities": 5},
+    description="COPRA: Community Overlap Propagation Algorithm",
+)
 class COPRA(CommunityDetectionAlgorithm):
     """
     Detect overlapping communities using label propagation algorithm.

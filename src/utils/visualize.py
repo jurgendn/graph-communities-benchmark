@@ -228,12 +228,13 @@ class Visualizer:
         return pos
 
     def visualize(self, graph: nx.Graph, communities: NodeClustering,
-                  pos: Optional[Dict[int, Tuple[float, float]]] = None,
-                  title: str = "Overlapping communities - Circular layout with overlap nodes between clusters",
-                  figsize: Tuple[int, int] = (10, 10),
-                  cmap_name: Optional[str] = None,
-                  show_legend: bool = True,
-                  seed: Optional[int] = None) -> plt.Figure:
+                   pos: Optional[Dict[int, Tuple[float, float]]] = None,
+                   title: str = "Overlapping communities - Circular layout with overlap nodes between clusters",
+                   figsize: Tuple[int, int] = (10, 10),
+                   cmap_name: Optional[str] = None,
+                   show_legend: bool = True,
+                   seed: Optional[int] = None,
+                   community_indices: Optional[List[int]] = None) -> plt.Figure:
         """
         Visualize overlapping communities with a circular layout.
 
@@ -255,6 +256,8 @@ class Visualizer:
             Whether to show the legend.
         seed : int, optional
             Random seed for layout computation. Uses instance default if None.
+        community_indices : list of int, optional
+            Indices of communities to visualize. If None, all communities are shown.
 
         Returns
         -------
@@ -271,6 +274,18 @@ class Visualizer:
 
         # Extract communities list from NodeClustering object
         communities_list = communities.communities
+        
+        # Filter communities if indices are specified
+        if community_indices is not None:
+            # Validate indices
+            max_index = len(communities_list) - 1
+            if any(i < 0 or i > max_index for i in community_indices):
+                raise ValueError(f"community_indices must be between 0 and {max_index}")
+            # Filter to selected communities
+            communities_list = [communities_list[i] for i in community_indices]
+            # Update title if it's the default one
+            if title == "Overlapping communities - Circular layout with overlap nodes between clusters":
+                title = f"Overlapping communities (showing {len(communities_list)} of {len(communities.communities)} total) - Circular layout with overlap nodes between clusters"
 
         # Calculate membership counts and overlap nodes
         membership_counts = self.calculate_membership_counts(graph, communities_list)
@@ -279,6 +294,21 @@ class Visualizer:
         # Compute layout if not provided
         if pos is None:
             pos = self.compute_circular_layout(graph, communities_list, overlap_nodes, seed=seed)
+
+        # Create subgraph containing only nodes from selected communities
+        if community_indices is not None:
+            # Get all nodes that belong to selected communities
+            nodes_in_selected_communities = set()
+            for comm in communities_list:
+                nodes_in_selected_communities.update(comm)
+            # Create induced subgraph
+            graph = graph.subgraph(nodes_in_selected_communities).copy()
+            # Recalculate membership counts and overlap for the subgraph
+            membership_counts = self.calculate_membership_counts(graph, communities_list)
+            overlap_nodes = self.get_overlap_nodes(membership_counts)
+            # Recompute layout for the subgraph
+            if pos is None or not pos:  # Only recompute if pos wasn't provided or is empty
+                pos = self.compute_circular_layout(graph, communities_list, overlap_nodes, seed=seed)
 
         plt.figure(figsize=figsize)
         ax = plt.gca()
@@ -302,6 +332,7 @@ class Visualizer:
                     node_size=150,
                     alpha=0.7,
                 )
+            # Only show legend for first 8 communities to avoid clutter
             if idx < 8:
                 legend_handles.append(
                     Line2D(
@@ -315,7 +346,7 @@ class Visualizer:
             nx.draw_networkx_nodes(
                 graph, pos, nodelist=overlap_nodes,
                 node_color="white", edgecolors="red", linewidths=3,
-                node_size=300, alpha=1.0, zorder=10
+                node_size=300, alpha=1.0
             )
             nx.draw_networkx_labels(
                 graph, pos,

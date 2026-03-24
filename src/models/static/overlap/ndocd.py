@@ -3,9 +3,17 @@ from cdlib import NodeClustering
 import networkx as nx
 
 from src.algorithms.base import CommunityDetectionAlgorithm
-from src.factory.factory import TemporalGraph
+from src.algorithms.registry import register
+from src.core.temporal_graph import TemporalGraph
 
 
+@register(
+    name="ndocd",
+    algo_type="static",
+    clustering_type="overlapping",
+    default_params={"beta": 0.3, "threshold_js": 0.4, "threshold_md": 0.5, "min_community_size": 3},
+    description="NDOCD: Overlapping Community Detection based on Network Decomposition (Ding et al. 2016)",
+)
 class NDOCD(CommunityDetectionAlgorithm):
     """
     Implementation of Overlapping Community Detection based on Network Decomposition (NDOCD).

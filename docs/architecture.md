@@ -59,7 +59,7 @@ GML snapshot folder (snapshot_t0.gml, snapshot_t1.gml, ...)
 
 ## Key Components
 
-### Data Loading — `src/dataloader/`
+### Data Loading — `src/data/`
 
 | Method | Description |
 |--------|-------------|
@@ -71,9 +71,9 @@ GML snapshot folder (snapshot_t0.gml, snapshot_t1.gml, ...)
 | `load_lfr_single_snapshot()` | Load one labeled LFR snapshot as a one-snapshot `TemporalGraph` |
 | `load_builtin_graph()` | Load built-in static graphs such as `karate` |
 
-### Core Abstractions — `src/factory/`
+### Core Abstractions — `src/core/`
 
-**`TemporalGraph`** (`src/factory/factory.py`)
+**`TemporalGraph`** (`src/core/temporal_graph.py`)
 - `base_graph` — NetworkX graph at t=0
 - `steps[]` — List of `TemporalChanges` (edge insertions/deletions per batch)
 - `_ground_truth_clusterings` — Optional precomputed ground truth per snapshot
@@ -84,6 +84,10 @@ GML snapshot folder (snapshot_t0.gml, snapshot_t1.gml, ...)
 Static graphs use the same abstraction with `steps=[]`, so `len(tg) == 1`.
 
 ### Algorithm Layer — `src/algorithms/`
+
+**`AlgorithmSpec`** and **`@register`** (`registry.py`) — Single source of truth for algorithm identity
+- `@register(name, algo_type, clustering_type, default_params, description)` decorator populates a global `ALGORITHM_REGISTRY`
+- Each algorithm declares its own metadata in code; YAML never carries module paths or descriptions
 
 **`CommunityDetectionAlgorithm`** (`base.py`) — Abstract base for all algorithms
 - `__call__(tg) -> List[NodeClustering]`
@@ -96,7 +100,11 @@ Static graphs use the same abstraction with `steps=[]`, so `len(tg) == 1`.
 - Passes the full `TemporalGraph` to a temporal algorithm
 - Returns either `List[NodeClustering]` or preserves pre-computed results from `MethodDynamicResults`
 
-In static mode, only entries from `snapshot_algorithms` are executed. In temporal mode, both `snapshot_algorithms` and `temporal_algorithms` can run.
+**`cdlib_adapters.py`** — Thin `@register` calls for 15 CDlib algorithms (e.g. `coach`, `angel`, `slpa`). No wrapper classes needed; the factory wraps them in `StaticMethodWrapper` automatically.
+
+**`factory.py`** — Loads the YAML run config, validates names against the registry, merges parameter overrides, and instantiates algorithm wrappers.
+
+In static mode, only entries from `target_snapshot_algorithms` are executed. In temporal mode, both `target_snapshot_algorithms` and `target_temporal_algorithms` can run.
 
 ### Model Implementations — `src/models/`
 
@@ -104,7 +112,7 @@ In static mode, only entries from `snapshot_algorithms` are executed. In tempora
 - `src/models/dynamic/` — temporal algorithm implementations
 - `src/models/common/` — shared model utilities such as `LouvainMixin`
 
-### Evaluation Layer — `src/evaluations/`
+### Evaluation Layer — `src/evaluation/`
 
 **`compute_modularity()`** (`metrics.py`)
 - Crisp communities: Newman-Girvan modularity
@@ -119,7 +127,7 @@ In static mode, only entries from `snapshot_algorithms` are executed. In tempora
 - `overlapping_normalized_mutual_information_MGH_fast()` — CDlib-compatible wrapper
 - ~770× speedup over the CDlib reference implementation (identical results)
 
-### Result Models — `src/factory/communities.py`
+### Result Models — `src/core/results.py`
 
 **`NodeClustering`** (CDlib object)
 - `communities` — List of node sets
@@ -132,7 +140,7 @@ In static mode, only entries from `snapshot_algorithms` are executed. In tempora
 - `customize_q0_overlap_trace` — Q0 modularity per snapshot
 - `nmi_trace` — Ground truth NMI per snapshot
 
-### Logging Layer — `src/pipeline_utils.py`
+### Logging Layer — `src/core/pipeline.py`
 
 Comet ML integration logs one experiment per benchmark run:
 - **Parameters**: contents of `config/algorithms.yaml` + CLI arguments
@@ -145,24 +153,27 @@ Comet ML integration logs one experiment per benchmark run:
 
 ### `config/algorithms.yaml`
 
+Algorithm identity (name, module, type, clustering type, description) lives in `@register` decorators in the source files. The YAML config is a minimal run configuration that selects which registered algorithms to execute and optionally overrides their default parameters.
+
 ```yaml
-target_snapshot_algorithms: [coach, ...]
-target_temporal_algorithms: [tiles, ...]
+# Which algorithms to run
+target_snapshot_algorithms:
+  - coach
+  - big_clam
+  - angel
 
-snapshot_algorithms:
-  coach:
-    module: "cdlib.algorithms"
-    function: "coach"
-    clustering_type: "overlapping"  # crisp | overlapping
-    params: {}
+target_temporal_algorithms:
+  - tiles
 
-temporal_algorithms:
-  tiles:
-    module: "src.models.dynamic.overlap.tiles"
-    function: "Tiles"
-    clustering_type: "overlapping"
-    params: {}
+# Optional parameter overrides
+algorithm_params:
+  big_clam:
+    num_communities: 10
+  angel:
+    threshold: 0.25
 ```
+
+The factory (`src/algorithms/factory.py`) validates every name in the target lists against the global `ALGORITHM_REGISTRY`. If a name is not registered, loading fails immediately with a `ValueError` listing all available algorithm names.
 
 ### `config/dynamic_dataset_config.yaml` and `config/static_dataset_config.yaml`
 
@@ -223,21 +234,23 @@ datasets:
 
 ## Extending the Benchmark
 
+See [Adding Algorithms](adding_algorithms.md) for a complete step-by-step guide.
+
 ### Add a new snapshot algorithm
 1. Create a class inheriting `CommunityDetectionAlgorithm` in `src/models/static/`.
-2. Implement `__call__(tg) -> List[NodeClustering]`
-3. Add an entry to `config/algorithms.yaml`
-4. Add the key to `target_snapshot_algorithms`
+2. Decorate with `@register(name=..., algo_type="static", clustering_type=..., ...)`.
+3. Add the module path to `_REGISTRATION_MODULES` in `src/algorithms/factory.py`.
+4. Add the algorithm name to `target_snapshot_algorithms` in `config/algorithms.yaml`.
 
 ### Add a new temporal algorithm
-1. Create a class inheriting `CommunityDetectionAlgorithm`
-2. Access `tg.steps` for temporal changes and maintain internal state
-3. Return a `MethodDynamicResults` object
-4. Register it under `temporal_algorithms` in `config/algorithms.yaml`
+1. Create a class inheriting `CommunityDetectionAlgorithm` in `src/models/dynamic/`.
+2. Decorate with `@register(name=..., algo_type="dynamic", clustering_type=..., ...)`.
+3. Add the module path to `_REGISTRATION_MODULES` in `src/algorithms/factory.py`.
+4. Add the algorithm name to `target_temporal_algorithms` in `config/algorithms.yaml`.
 
 ### Add a new metric
-1. Implement the metric function in `src/evaluations/`
-2. Call it from `evaluate()` in `src/pipeline_utils.py`
+1. Implement the metric function in `src/evaluation/`
+2. Call it from `evaluate()` in `src/core/pipeline.py`
 3. Add the trace field to `MethodDynamicResults`
 4. Log to Comet ML via `log_results()`
 
