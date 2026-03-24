@@ -8,9 +8,17 @@ import numpy as np
 from cdlib import NodeClustering
 
 from src.algorithms.base import CommunityDetectionAlgorithm
-from src.factory.factory import TemporalGraph
+from src.algorithms.registry import register
+from src.core.temporal_graph import TemporalGraph
 
 
+@register(
+    name="big_clam",
+    algo_type="static",
+    clustering_type="overlapping",
+    default_params={"num_communities": 10, "iterations": 100, "learning_rate": 0.005},
+    description="BigClam: Overlapping community detection via gradient ascent on affiliation matrix",
+)
 class BigClam(CommunityDetectionAlgorithm):
     """Detect overlapping communities using gradient ascent on affiliation matrix."""
 

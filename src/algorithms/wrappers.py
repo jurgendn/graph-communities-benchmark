@@ -7,8 +7,8 @@ from typing import Callable, List
 from cdlib import NodeClustering
 
 from src.algorithms.base import CommunityDetectionAlgorithm
-from src.factory.communities import MethodDynamicResults
-from src.factory.factory import TemporalGraph
+from src.core.results import MethodDynamicResults
+from src.core.temporal_graph import TemporalGraph
 
 
 class StaticMethodWrapper(CommunityDetectionAlgorithm):

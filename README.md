@@ -25,28 +25,22 @@ A benchmarking framework for dynamic and static community detection. The project
 | [Configuration Guide](docs/configuration.md) | YAML config files and key fields |
 | [Metrics Documentation](docs/metrics.md) | Logged metrics and ground-truth evaluation |
 | [Visualization Guide](docs/visualization.md) | Fetching Comet runs and generating plots |
+| [Adding Algorithms](docs/adding_algorithms.md) | Step-by-step guide for integrating new algorithms |
 | [Development Guide](docs/development_guide.md) | Adding algorithms, datasets, and metrics |
 
 ## Algorithm Layout
 
+Algorithms are registered via `@register` decorators in their source files. The decorator declares identity and metadata (name, type, clustering type, default params, description). [`config/algorithms.yaml`](config/algorithms.yaml) is a minimal run config that selects which registered algorithms to execute and optionally overrides default parameters.
+
 ### Snapshot algorithms
 
-Configured in the `snapshot_algorithms` section of [`config/algorithms.yaml`](config/algorithms.yaml) and executed once per snapshot through the wrapper layer. These can run in both the temporal benchmark and the static benchmark.
+Registered with `algo_type="static"` and executed once per snapshot through the wrapper layer. These can run in both the temporal benchmark and the static benchmark.
 
-Common configured examples:
-
-- `coach`
-- `graph_entropy`
-- `core_expansion`
-- `angel`
-- `slpa`
-- `percomvc`
-- `big_clam`
-- `demon`
+Available examples include: `coach`, `graph_entropy`, `core_expansion`, `angel`, `slpa`, `percomvc`, `big_clam`, `demon`, `copra`, `vast-pmo`, `vast-cosine-overlap`, `ndocd`, `dpclus`, `ipca`, `dcs`, `lfm`, `ebgc`, `lais2`, `walkscan`, `umstmo`.
 
 ### Temporal algorithms
 
-Algorithms that consume the full `TemporalGraph`:
+Registered with `algo_type="dynamic"` and consume the full `TemporalGraph`:
 
 - `tiles`
 - `df_louvain`
@@ -56,7 +50,7 @@ Algorithms that consume the full `TemporalGraph`:
 - `crisp`: one community per node; evaluated with Newman-Girvan modularity.
 - `overlapping`: multiple communities per node; evaluated with CDlib overlap modularity plus custom Q0 modularity.
 
-The execution style is controlled by which section an algorithm appears in (`snapshot_algorithms` or `temporal_algorithms`) plus its `clustering_type` in [`config/algorithms.yaml`](config/algorithms.yaml).
+The execution style is controlled by which target list an algorithm appears in (`target_snapshot_algorithms` or `target_temporal_algorithms`) in [`config/algorithms.yaml`](config/algorithms.yaml). The `clustering_type` comes from the `@register` decorator.
 
 ## Quick Start
 
@@ -204,11 +198,19 @@ graph-communities-benchmark/
 |- scripts/
 |  |- benchmark.sh
 |  `- plot.sh
+|- templates/
+|  |- static_algorithm_template.py
+|  `- dynamic_algorithm_template.py
 |- tools/
 |  |- fetch_and_merge.py
 |  `- plots.py
 `- src/
    |- algorithms/
+   |  |- registry.py
+   |  |- cdlib_adapters.py
+   |  |- factory.py
+   |  |- base.py
+   |  `- wrappers.py
    |- dataloader/
    |- evaluations/
    |- factory/
@@ -268,4 +270,4 @@ This project is licensed under the MIT License. See [`LICENSE`](LICENSE).
 
 ## Contributing
 
-Contributions are welcome. Start with [docs/development_guide.md](docs/development_guide.md).
+Contributions are welcome. To add a new algorithm, see [docs/adding_algorithms.md](docs/adding_algorithms.md). For general development guidance, see [docs/development_guide.md](docs/development_guide.md).

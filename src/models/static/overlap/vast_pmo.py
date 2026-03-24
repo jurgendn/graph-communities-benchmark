@@ -9,12 +9,13 @@ from cdlib import NodeClustering
 from scipy.sparse import csr_matrix
 
 from src.algorithms.base import CommunityDetectionAlgorithm
-from src.factory.communities import (
+from src.algorithms.registry import register
+from src.core.results import (
     IntermediateResults,
     MethodDynamicResults,
     OverlapPartitionModel,
 )
-from src.factory.factory import TemporalGraph
+from src.core.temporal_graph import TemporalGraph
 
 
 class PMO:
@@ -107,6 +108,13 @@ class PMO:
         return pmo_result, results
 
 
+@register(
+    name="vast-pmo",
+    algo_type="static",
+    clustering_type="overlapping",
+    default_params={"louvain_resolution": 1, "theta": 0.85},
+    description="VAST PMO: Overlapping community detection using Parameterized Modularity Overlap",
+)
 class VastPMO(CommunityDetectionAlgorithm):
     """
     Detect overlapping communities using Parameterized Modularity Overlap (PMO).

@@ -29,7 +29,7 @@ python main.py \
 What happens:
 
 1. The dataset is converted into a `TemporalGraph`.
-2. Snapshot and temporal target algorithms are loaded from [`config/algorithms.yaml`](../config/algorithms.yaml).
+2. Target algorithms are loaded from the algorithm registry based on the names in [`config/algorithms.yaml`](../config/algorithms.yaml).
 3. Each run is evaluated and logged to Comet ML.
 
 ## Useful CLI Options
@@ -199,5 +199,6 @@ python main_static.py --builtin karate --num-runs 1
 ## Next Steps
 
 - See [Configuration Guide](configuration.md) to change target datasets and algorithms.
+- See [Adding Algorithms](adding_algorithms.md) to integrate your own community detection method.
 - See [Metrics Documentation](metrics.md) for the meaning of the logged values.
 - See [Visualization Guide](visualization.md) for plot details.

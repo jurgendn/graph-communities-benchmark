@@ -5,7 +5,7 @@ import numpy as np
 from cdlib import NodeClustering
 from networkx.algorithms.community import modularity
 
-from src.factory.sampler import SelectiveSampler
+from src.core.sampler import SelectiveSampler
 from src.models.common.helpers import convert_dict_communities_to_cdlib
 
 

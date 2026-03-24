@@ -6,9 +6,10 @@ from cdlib.algorithms.internal_dcd.eTILES import eTILES
 from dynetx import DynGraph
 
 from src.algorithms.base import CommunityDetectionAlgorithm
-from src.evaluations.target_modularity import overlapping_modularity_q0
-from src.factory.communities import IntermediateResults, MethodDynamicResults
-from src.factory.factory import TemporalGraph
+from src.algorithms.registry import register
+from src.evaluation.target_modularity import overlapping_modularity_q0
+from src.core.results import IntermediateResults, MethodDynamicResults
+from src.core.temporal_graph import TemporalGraph
 
 
 def _patched_tiles(dg: object, obs: int = 1) -> TemporalClustering:
@@ -89,7 +90,7 @@ def _named_to_nodeclustering(named: NamedClustering, graph: nx.Graph) -> NodeClu
     """
     Convert a cdlib.NamedClustering instance to a NodeClustering on the given graph.
     """
-    communities_list = [list(comm) for comm in named.communities]
+    communities_list = [list(comm) for comm in named.communities if comm]
     return NodeClustering(
         communities=communities_list,
         graph=graph,
@@ -99,6 +100,13 @@ def _named_to_nodeclustering(named: NamedClustering, graph: nx.Graph) -> NodeClu
     )
 
 
+@register(
+    name="tiles",
+    algo_type="dynamic",
+    clustering_type="overlapping",
+    default_params={"obs": 1},
+    description="TILES: Temporal Incremental Link-based Evolutionary System",
+)
 class Tiles(CommunityDetectionAlgorithm):
     def __init__(self, obs: int = 1):
         self.obs = obs
@@ -123,7 +131,11 @@ class Tiles(CommunityDetectionAlgorithm):
         for snapshot, community in zip(tg.iter_snapshots(), res.clusterings.values()):
             # Convert NamedClustering to NodeClustering for a uniform interface
             node_clustering = _named_to_nodeclustering(community, snapshot)
-            q = evaluation.modularity_overlap(snapshot, node_clustering).score
+            # Guard against empty communities to avoid ZeroDivisionError in cdlib
+            if node_clustering.communities:
+                q = evaluation.modularity_overlap(snapshot, node_clustering).score
+            else:
+                q = 0.0
             q0 = overlapping_modularity_q0(snapshot, node_clustering)
             current_res = IntermediateResults(
                 runtime=elapsed,

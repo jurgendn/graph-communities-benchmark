@@ -1,7 +1,7 @@
 """Compatibility layer for overlapping NMI utilities.
 
 This module now delegates to the fast implementation in
-``src.evaluations.onmi_fast`` so existing imports keep working while the
+``src.evaluation.onmi_fast`` so existing imports keep working while the
 evaluation pipeline uses the optimized code path.
 """
 
@@ -10,7 +10,7 @@ from typing import Iterable, Sequence
 from cdlib import NodeClustering
 from cdlib.evaluation import MatchingResult
 
-from src.evaluations.onmi_fast import (
+from src.evaluation.onmi_fast import (
     onmi_score,
     overlapping_normalized_mutual_information_MGH_fast,
 )

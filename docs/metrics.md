@@ -12,11 +12,11 @@ The benchmark evaluates each algorithm per snapshot and logs both summary and st
 | `num_communities` | Number of detected communities |
 | `nmi` | Ground-truth agreement when LFR labels are available |
 
-Internally, the traces are stored on [`src/factory/communities.py`](../src/factory/communities.py).
+Internally, the traces are stored on [`src/core/results.py`](../src/core/results.py).
 
 ## Crisp vs Overlapping Evaluation
 
-The modularity dispatcher in [`src/evaluations/metrics.py`](../src/evaluations/metrics.py) uses `clustering_type` from the algorithm config.
+The modularity dispatcher in [`src/evaluation/metrics.py`](../src/evaluation/metrics.py) uses `clustering_type` from the algorithm registry (set via the `@register` decorator).
 
 ### Crisp
 
@@ -26,7 +26,7 @@ The modularity dispatcher in [`src/evaluations/metrics.py`](../src/evaluations/m
 ### Overlapping
 
 - `cdlib_modularity`: `cdlib.evaluation.modularity_overlap(...).score`
-- `customize_q0_modularity`: custom Q0 implementation from [`src/evaluations/target_modularity.py`](../src/evaluations/target_modularity.py)
+- `customize_q0_modularity`: custom Q0 implementation from [`src/evaluation/target_modularity.py`](../src/evaluation/target_modularity.py)
 
 ## Runtime
 
@@ -35,7 +35,7 @@ Runtime is recorded once per snapshot result.
 - Static wrappers measure total algorithm time and distribute it evenly across the returned snapshots.
 - Dynamic implementations can return their own per-step runtimes through `MethodDynamicResults`.
 
-See [`src/pipeline_utils.py`](../src/pipeline_utils.py).
+See [`src/core/pipeline.py`](../src/core/pipeline.py).
 
 ## Ground-Truth Evaluation
 
@@ -83,21 +83,21 @@ Per-step metrics include:
 
 ## Fast ONMI Path
 
-Overlapping ground-truth evaluation is routed through [`src/evaluations/onmi_fast.py`](../src/evaluations/onmi_fast.py) and called from [`src/evaluations/metrics.py`](../src/evaluations/metrics.py).
+Overlapping ground-truth evaluation is routed through [`src/evaluation/onmi_fast.py`](../src/evaluation/onmi_fast.py) and called from [`src/evaluation/metrics.py`](../src/evaluation/metrics.py).
 
 - It preserves CDlib-compatible MGH scoring behavior.
 - It uses vectorized entropy computations and sparse membership matrices for speed.
-- [`src/evaluations/onmi.py`](../src/evaluations/onmi.py) now remains only as a compatibility wrapper.
+- [`src/evaluation/onmi.py`](../src/evaluation/onmi.py) now remains only as a compatibility wrapper.
 
 ## Adding A New Metric
 
-1. Implement the metric in `src/evaluations/`.
-2. Extend evaluation in [`src/pipeline_utils.py`](../src/pipeline_utils.py).
-3. Add storage fields to [`src/factory/communities.py`](../src/factory/communities.py) if needed.
+1. Implement the metric in `src/evaluation/`.
+2. Extend evaluation in [`src/core/pipeline.py`](../src/core/pipeline.py).
+3. Add storage fields to [`src/core/results.py`](../src/core/results.py) if needed.
 4. Add the metric name to [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml) and/or [`config/visualization_static.yaml`](../config/visualization_static.yaml) if you want it fetched and plotted.
 
 ## References
 
 - Newman and Girvan modularity
 - CDlib modularity and NMI implementations
-- Custom Q0 implementation in [`src/evaluations/target_modularity.py`](../src/evaluations/target_modularity.py)
+- Custom Q0 implementation in [`src/evaluation/target_modularity.py`](../src/evaluation/target_modularity.py)

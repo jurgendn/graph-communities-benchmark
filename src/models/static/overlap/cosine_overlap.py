@@ -9,9 +9,17 @@ from cdlib import NodeClustering
 from numpy import linalg as LA
 
 from src.algorithms.base import CommunityDetectionAlgorithm
-from src.factory.factory import TemporalGraph
+from src.algorithms.registry import register
+from src.core.temporal_graph import TemporalGraph
 
 
+@register(
+    name="vast-cosine-overlap",
+    algo_type="static",
+    clustering_type="overlapping",
+    default_params={"theta": 0.85, "walk_power": 3},
+    description="VAST Cosine Overlap: Overlapping community detection using cosine similarity in embedding space",
+)
 class CosineOverlap(CommunityDetectionAlgorithm):
     """
     Detect overlapping communities using cosine similarity in embedding space.

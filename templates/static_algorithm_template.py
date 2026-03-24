@@ -7,13 +7,20 @@ Copy this file to:
   src/models/static/crisp/your_algorithm.py     (for crisp)
 
 Then:
-  1. Rename the class (YourStaticAlgorithm → something meaningful).
-  2. Fill in __init__ parameters and _detect_communities logic.
-  3. Register in config/algorithms.yaml (see bottom of this file).
+  1. Rename the class.
+  2. Fill in ``_detect_communities`` with your logic.
+  3. Update the ``@register(...)`` decorator with your algorithm's name and metadata.
+  4. Add the algorithm name to ``target_snapshot_algorithms`` in config/algorithms.yaml.
+  5. Add the module path to ``_REGISTRATION_MODULES`` in src/algorithms/factory.py.
 
 A static algorithm is applied independently to each snapshot of the
-temporal graph. It receives one networkx Graph and returns one
-NodeClustering.
+temporal graph.  It receives one ``networkx.Graph`` per snapshot and must
+produce one ``cdlib.NodeClustering`` per snapshot.
+
+Integration checklist (3 touches):
+  - This file  (implement + @register)
+  - config/algorithms.yaml  (add name to target list, optionally override params)
+  - src/algorithms/factory.py  (add module to _REGISTRATION_MODULES)
 """
 
 from typing import List
@@ -22,9 +29,20 @@ import networkx as nx
 from cdlib import NodeClustering
 
 from src.algorithms.base import CommunityDetectionAlgorithm
-from src.factory.factory import TemporalGraph
+from src.algorithms.registry import register
+from src.core.temporal_graph import TemporalGraph
 
 
+@register(
+    name="your_static_algorithm",          # unique name, must match YAML reference
+    algo_type="static",
+    clustering_type="overlapping",         # or "crisp"
+    default_params={
+        "param1": 0.5,
+        "param2": 10,
+    },
+    description="Short description of your algorithm",
+)
 class YourStaticAlgorithm(CommunityDetectionAlgorithm):
     """
     One-line description of your algorithm.
@@ -41,7 +59,7 @@ class YourStaticAlgorithm(CommunityDetectionAlgorithm):
         self.param2 = param2
 
     # ------------------------------------------------------------------
-    # Public interface — do NOT rename or change the signature.
+    # Public interface -- do NOT rename or change the signature.
     # ------------------------------------------------------------------
 
     def __call__(self, tg: TemporalGraph) -> List[NodeClustering]:
@@ -67,7 +85,7 @@ class YourStaticAlgorithm(CommunityDetectionAlgorithm):
         return results
 
     # ------------------------------------------------------------------
-    # Private helpers — rename and add as needed.
+    # Private helpers -- rename and add as needed.
     # ------------------------------------------------------------------
 
     def _detect_communities(self, graph: nx.Graph) -> List[List]:
@@ -82,7 +100,7 @@ class YourStaticAlgorithm(CommunityDetectionAlgorithm):
             Nodes may appear in multiple communities (overlapping) or exactly
             one (crisp).
 
-        Example (random partition — replace with real logic):
+        Example (random partition -- replace with real logic):
             nodes = list(graph.nodes())
             mid = len(nodes) // 2
             return [nodes[:mid], nodes[mid:]]
@@ -91,18 +109,21 @@ class YourStaticAlgorithm(CommunityDetectionAlgorithm):
 
 
 # ----------------------------------------------------------------------
-# config/algorithms.yaml registration snippet
+# config/algorithms.yaml -- add the algorithm name to the target list
+# and optionally override default params:
+#
+# target_snapshot_algorithms:
+#   - your_static_algorithm
+#
+# algorithm_params:               # optional
+#   your_static_algorithm:
+#     param1: 0.7
+#     param2: 20
 # ----------------------------------------------------------------------
 #
-# Add the following block under `snapshot_algorithms:` in config/algorithms.yaml,
-# then add your algorithm name to `target_snapshot_algorithms:` to enable it.
+# src/algorithms/factory.py -- add the module path to _REGISTRATION_MODULES:
 #
-# your_algorithm:
-#   module: "src.models.static.overlap.your_algorithm"  # adjust path
-#   function: "YourStaticAlgorithm"
-#   params:
-#     param1: 0.5
-#     param2: 10
-#   clustering_type: "overlapping"   # or "crisp"
-#   metadata: {}
-#   description: "Short description of your algorithm"
+# _REGISTRATION_MODULES = [
+#     ...
+#     "src.models.static.overlap.your_algorithm",
+# ]

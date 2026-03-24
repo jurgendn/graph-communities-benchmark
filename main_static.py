@@ -21,8 +21,8 @@ from dotenv import load_dotenv
 from tqdm.auto import tqdm
 
 from src.algorithms.factory import load_algorithms
-from src.dataloader.static_loader import load_static_as_temporal, load_builtin_graph, load_lfr_single_snapshot, BUILTIN_GRAPHS
-from src.pipeline_utils import run_algorithm, evaluate, log_results
+from src.data.static_loader import load_static_as_temporal, load_builtin_graph, load_lfr_single_snapshot, BUILTIN_GRAPHS
+from src.core.pipeline import run_algorithm, evaluate, log_results
 
 load_dotenv()
 

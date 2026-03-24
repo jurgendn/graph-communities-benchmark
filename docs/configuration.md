@@ -6,7 +6,7 @@ The repository uses YAML files under `config/` to define algorithms, datasets, a
 
 | File | Purpose |
 | --- | --- |
-| [`config/algorithms.yaml`](../config/algorithms.yaml) | Which algorithms run and how they are loaded |
+| [`config/algorithms.yaml`](../config/algorithms.yaml) | Which algorithms to run and optional parameter overrides |
 | [`config/dynamic_dataset_config.yaml`](../config/dynamic_dataset_config.yaml) | Named temporal and LFR datasets |
 | [`config/static_dataset_config.yaml`](../config/static_dataset_config.yaml) | Named static graph datasets |
 | [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml) | Dynamic benchmark visualization settings |
@@ -16,25 +16,25 @@ The repository uses YAML files under `config/` to define algorithms, datasets, a
 
 This file drives both [`main.py`](../main.py) and [`main_static.py`](../main_static.py) through [`src/algorithms/factory.py`](../src/algorithms/factory.py).
 
+Algorithm identity — module path, type, clustering type, default parameters, and description — is defined by `@register` decorators in the algorithm source files (see [Adding Algorithms](adding_algorithms.md)). The YAML config is a **minimal run configuration** that only selects which registered algorithms to execute and optionally overrides their default parameters.
+
 ### Structure
 
 ```yaml
 target_snapshot_algorithms:
   - coach
-  - core_expansion
-  - graph_entropy
+  - big_clam
+  - angel
 
 target_temporal_algorithms:
   - tiles
 
-snapshot_algorithms:
-  coach:
-    module: "cdlib.algorithms"
-    function: "coach"
-    params: {}
-    clustering_type: "overlapping"
-    metadata: {}
-    description: "COACH"
+algorithm_params:          # optional overrides
+  big_clam:
+    num_communities: 10
+    iterations: 100
+  angel:
+    threshold: 0.25
 ```
 
 ### Important fields
@@ -43,29 +43,29 @@ snapshot_algorithms:
 | --- | --- |
 | `target_snapshot_algorithms` | Ordered list of per-snapshot algorithms to execute |
 | `target_temporal_algorithms` | Ordered list of full-temporal-graph algorithms to execute |
-| `snapshot_algorithms` | Definitions for snapshot-by-snapshot algorithms |
-| `temporal_algorithms` | Definitions for full-temporal-graph algorithms |
-| `module` | Python import path |
-| `function` | Function or class loaded from that module |
-| `params` | Keyword args passed to the function or constructor |
-| `clustering_type` | `crisp` or `overlapping` |
-| `description` | Human-readable label |
+| `algorithm_params` | Optional dict of parameter overrides keyed by algorithm name |
 
 ### Behavior
 
 - Snapshot algorithms are wrapped and called once per snapshot; they can be used in both `main.py` and `main_static.py`.
 - Temporal algorithms consume the full `TemporalGraph`; they are only meaningful in `main.py`.
-- The `module` field usually points either to `cdlib.algorithms` or to an implementation under `src/models/`.
+- Every name in the target lists is validated against the global `ALGORITHM_REGISTRY`. If a name is not registered, loading fails immediately with a `ValueError` listing all available algorithm names.
+- Parameters listed under `algorithm_params` are merged on top of the `default_params` declared in the `@register` decorator. Only list parameters you want to change.
+
+### Listing available algorithms
+
+To see all registered algorithm names:
+
+```bash
+python -c "from src.algorithms.factory import _ensure_registrations; _ensure_registrations(); from src.algorithms.registry import ALGORITHM_REGISTRY; print(sorted(ALGORITHM_REGISTRY.keys()))"
+```
 
 ### Current defaults
 
 At the moment, the default target lists are:
 
 ```yaml
-target_snapshot_algorithms:
-  - coach
-  - core_expansion
-  - graph_entropy
+target_snapshot_algorithms: []   # uncomment entries to activate
 
 target_temporal_algorithms:
   - tiles
