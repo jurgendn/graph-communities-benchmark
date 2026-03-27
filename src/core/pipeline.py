@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 from src.evaluation.metrics import compute_modularity, compute_nmi_from_ground_truth
 from src.core.results import IntermediateResults, MethodDynamicResults
 from src.core.temporal_graph import TemporalGraph
+from src.analyzer.artifacts import build_payload, enrich_clusterings, log_artifact
 
 load_dotenv()
 
@@ -227,5 +228,40 @@ def log_results(
             step_metrics["nmi"] = results.nmi_trace[step]
         
         experiment.log_metrics(step_metrics, step=step)
+
+    # Log clustering results as a Comet Artifact for downstream analysis
+    try:
+        dataset_config = {
+            "dataset": args.dataset,
+            "benchmark_mode": getattr(args, "benchmark_mode", "dynamic"),
+            "max_steps": args.max_steps,
+            "batch_range": args.batch_range,
+            "initial_fraction": args.initial_fraction,
+            "delete_insert_ratio": args.delete_insert_ratio,
+            "preload_fraction": getattr(args, "preload_fraction", None),
+        }
+
+        enrich_clusterings(
+            clusterings=results.clusterings,
+            tg=tg,
+            algo_name=algo_name,
+            algo_params=algo_params,
+            clustering_type=clustering_type,
+            dataset_config=dataset_config,
+        )
+
+        payload = build_payload(
+            results=results,
+            algo_name=algo_name,
+            algo_type=algo_type,
+            clustering_type=clustering_type,
+            algo_params=algo_params,
+            dataset=args.dataset,
+            benchmark_mode=getattr(args, "benchmark_mode", "dynamic"),
+            dataset_config=dataset_config,
+        )
+        log_artifact(experiment, payload, clusterings=results.clusterings)
+    except Exception as e:
+        print(f"Warning: failed to log clustering artifact: {e}")
 
     experiment.end()
