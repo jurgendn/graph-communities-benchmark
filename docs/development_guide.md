@@ -244,6 +244,16 @@ The repository includes a mathematical summary of the Vast-PMO model in [`VAST-P
 3. Extend [`src/core/results.py`](../src/core/results.py) if new traces or averages are needed.
 4. Add the metric key to [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml) and/or [`config/visualization_static.yaml`](../config/visualization_static.yaml) if it should appear in fetched and plotted outputs.
 
+## Add A New Post-Hoc Analyzer
+
+Post-hoc analyzers operate on downloaded Comet artifacts rather than during the benchmark run.
+
+1. Implement the analyzer function in `src/analyzer/` with the signature `fn(payload, clusterings=None, **kwargs) -> dict`.
+2. Register it in the `ANALYZERS` dict in [`src/analyzer/runner.py`](../src/analyzer/runner.py).
+3. The CLI (`tools/analyze.py`) picks it up automatically via the `--analyzer` flag.
+
+The `payload` is a `ClusteringArtifactPayload` (JSON metadata); `clusterings` is `Optional[List[NodeClustering]]` loaded from pickle. Both are provided by the runner.
+
 ## Important Modules
 
 | Path | Role |
@@ -260,6 +270,10 @@ The repository includes a mathematical summary of the Vast-PMO model in [`VAST-P
 | [`src/core/pipeline.py`](../src/core/pipeline.py) | run, evaluate, and log pipeline |
 | [`src/evaluation/metrics.py`](../src/evaluation/metrics.py) | modularity and NMI dispatch |
 | [`src/evaluation/onmi_fast.py`](../src/evaluation/onmi_fast.py) | fast overlapping NMI implementation |
+| [`src/analyzer/artifacts.py`](../src/analyzer/artifacts.py) | artifact enrichment, serialization, upload/download |
+| [`src/analyzer/runner.py`](../src/analyzer/runner.py) | post-hoc analysis orchestration |
+| [`src/analyzer/overlap_quality.py`](../src/analyzer/overlap_quality.py) | overlap quality structural analysis |
+| [`tools/analyze.py`](../tools/analyze.py) | CLI for post-hoc artifact analysis |
 | [`src/models/common/`](../src/models/common) | shared model helpers and mixins |
 | [`src/visualization/`](../src/visualization) | Comet fetch/merge/plot pipeline |
 

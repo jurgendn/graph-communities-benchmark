@@ -96,8 +96,49 @@ Overlapping ground-truth evaluation is routed through [`src/evaluation/onmi_fast
 3. Add storage fields to [`src/core/results.py`](../src/core/results.py) if needed.
 4. Add the metric name to [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml) and/or [`config/visualization_static.yaml`](../config/visualization_static.yaml) if you want it fetched and plotted.
 
+## Post-Hoc Overlap Quality Metrics
+
+In addition to the per-run metrics above, the analyzer package (`src/analyzer/`) computes structural and statistical metrics offline from logged artifacts. These are not part of the Comet ML step metrics — they are produced by `tools/analyze.py --analyzer overlap-quality`.
+
+### Structural metrics (per node, per snapshot)
+
+| Metric | Description | Module |
+| --- | --- | --- |
+| Participation coefficient | Fraction of a node's neighbors that belong to communities other than its own | `metrics_structural.py` |
+| Max embeddedness | Maximum fraction of a node's neighbors in any single community | `metrics_structural.py` |
+| Betweenness centrality | Standard NetworkX betweenness (optional `k`-sampling for large graphs) | `metrics_structural.py` |
+
+### Statistical comparison
+
+For each structural metric, the analyzer splits nodes into overlap (appearing in 2+ communities) and non-overlap groups, then runs a **Mann-Whitney U test** with rank-biserial effect size (`stats.py`).
+
+The report includes per group: sample size, median, mean, U statistic, p-value, and rank-biserial correlation.
+
+### Accuracy metric
+
+| Metric | Description | Module |
+| --- | --- | --- |
+| Omega index | Agreement between detected and ground-truth community assignments | `metrics_accuracy.py` |
+
+### Temporal stability
+
+| Metric | Description | Module |
+| --- | --- | --- |
+| ONMI (consecutive) | Overlapping NMI between snapshot t-1 and t community assignments | `metrics_accuracy.py` |
+
+### How to run
+
+```bash
+python tools/analyze.py --workspace my-ws --artifact clustering-coach-CollegeMsg \
+    --analyzer overlap-quality --betweenness-k 500 --save-json report.json
+```
+
+See [Post-Hoc Analysis](analysis.md) for full usage and report format.
+
 ## References
 
 - Newman and Girvan modularity
 - CDlib modularity and NMI implementations
 - Custom Q0 implementation in [`src/evaluation/target_modularity.py`](../src/evaluation/target_modularity.py)
+- Mann-Whitney U test (scipy.stats.mannwhitneyu)
+- Rank-biserial correlation for effect size

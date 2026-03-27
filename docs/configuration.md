@@ -310,3 +310,7 @@ Edit `target_datasets` in [`config/static_dataset_config.yaml`](../config/static
 ### Plot different algorithms or projects
 
 Edit [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml) or [`config/visualization_static.yaml`](../config/visualization_static.yaml), especially `projects`, `directories`, `selected_algorithms`, `methods_name`, and `colors`.
+
+### Analyze clustering artifacts
+
+The post-hoc analyzer (`tools/analyze.py`) requires `COMET_API_KEY` and `COMET_WORKSPACE` in `.env` to download artifacts. No additional config files are needed — artifact names follow the pattern `clustering-{algorithm}-{dataset}` and are passed directly via the `--artifact` flag. See [Post-Hoc Analysis](analysis.md) for details.

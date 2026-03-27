@@ -13,6 +13,8 @@ A benchmarking framework for dynamic and static community detection. The project
 - Evaluate crisp and overlapping outputs with the appropriate modularity metric.
 - Optionally evaluate against ground truth on LFR-style `.gml` snapshots and supported static graphs.
 - Log per-run and per-step metrics to Comet ML.
+- Log full clustering results as Comet ML artifacts (pickle + JSON metadata) for post-hoc analysis.
+- Analyze overlap quality offline: structural metrics, statistical tests, accuracy, and temporal stability.
 - Fetch, merge, and plot experiment results into grouped comparison figures.
 
 ## Documentation
@@ -25,6 +27,7 @@ A benchmarking framework for dynamic and static community detection. The project
 | [Configuration Guide](docs/configuration.md) | YAML config files and key fields |
 | [Metrics Documentation](docs/metrics.md) | Logged metrics and ground-truth evaluation |
 | [Visualization Guide](docs/visualization.md) | Fetching Comet runs and generating plots |
+| [Post-Hoc Analysis](docs/analysis.md) | Overlap quality analyzer and artifact format |
 | [Adding Algorithms](docs/adding_algorithms.md) | Step-by-step guide for integrating new algorithms |
 | [Development Guide](docs/development_guide.md) | Adding algorithms, datasets, and metrics |
 
@@ -145,6 +148,35 @@ PYTHONPATH=. python tools/plots.py --benchmark-type dynamic
 
 See [Quick Start](docs/quick_start.md) for more examples, including LFR input and static datasets from config.
 
+## Post-Hoc Overlap Analysis
+
+Every benchmark run logs a Comet ML artifact containing the full `NodeClustering` objects (with graphs) as a pickle file alongside JSON metadata. These artifacts can be downloaded and analyzed offline.
+
+### Run the analyzer
+
+```bash
+# Basic summary
+python tools/analyze.py --workspace my-ws --artifact clustering-coach-CollegeMsg
+
+# Overlap quality analysis (structural metrics + statistical tests)
+python tools/analyze.py --workspace my-ws --artifact clustering-coach-CollegeMsg \
+    --analyzer overlap-quality
+
+# With approximate betweenness and JSON export
+python tools/analyze.py --workspace my-ws --artifact clustering-coach-CollegeMsg \
+    --analyzer overlap-quality --betweenness-k 500 --save-json report.json
+```
+
+The overlap quality analyzer computes per-snapshot:
+
+- **Participation coefficient** — fraction of a node's neighbors in other communities
+- **Max embeddedness** — max fraction of neighbors in any single community
+- **Betweenness centrality** — bridge position in the graph
+- **Mann-Whitney U tests** — statistical comparison of overlap vs non-overlap node groups
+- **Temporal stability** — ONMI between consecutive snapshots (multi-snapshot runs)
+
+See [Post-Hoc Analysis](docs/analysis.md) for the full reference.
+
 ## CLI Highlights
 
 `main.py` accepts these commonly used options:
@@ -202,6 +234,7 @@ graph-communities-benchmark/
 |  |- static_algorithm_template.py
 |  `- dynamic_algorithm_template.py
 |- tools/
+|  |- analyze.py
 |  |- fetch_and_merge.py
 |  `- plots.py
 `- src/
@@ -211,6 +244,18 @@ graph-communities-benchmark/
    |  |- factory.py
    |  |- base.py
    |  `- wrappers.py
+   |- analyzer/
+   |  |- artifacts.py
+   |  |- models.py
+   |  |- runner.py
+   |  |- overlap_quality.py
+   |  |- metrics_structural.py
+   |  |- metrics_accuracy.py
+   |  `- stats.py
+   |- core/
+   |  |- pipeline.py
+   |  |- results.py
+   |  `- temporal_graph.py
    |- dataloader/
    |- evaluations/
    |- factory/
@@ -233,6 +278,8 @@ Per run, the pipeline logs summary and per-step metrics to Comet ML, including:
 - `nmi` when ground truth is available
 
 Details are in [docs/metrics.md](docs/metrics.md).
+
+In addition to metrics, each run logs a **clustering artifact** to Comet ML containing the full `List[NodeClustering]` objects (with graphs attached) as `clusterings.pkl`, plus lightweight JSON metadata as `clustering_payload.json`. These artifacts enable post-hoc analysis without re-running benchmarks.
 
 ## Data And Outputs
 

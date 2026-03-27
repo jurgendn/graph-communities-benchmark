@@ -172,6 +172,27 @@ PYTHONPATH=. python tools/plots.py --benchmark-type all
 
 The plot pipeline reads [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml) and [`config/visualization_static.yaml`](../config/visualization_static.yaml), fetches Comet runs into `experiments/dynamic/raw/` and `experiments/static/raw/`, merges them into `experiments/dynamic/merged/` and `experiments/static/merged/`, and writes figures to `assets/dynamic/` and `assets/static/`.
 
+## Analyze Clustering Artifacts
+
+After benchmark runs, clustering results are stored as Comet ML artifacts. You can download and analyze them offline:
+
+```bash
+# List what's available (basic summary)
+python tools/analyze.py --workspace my-ws --artifact clustering-coach-CollegeMsg
+
+# Run overlap quality analysis
+python tools/analyze.py --workspace my-ws --artifact clustering-coach-CollegeMsg \
+    --analyzer overlap-quality
+
+# With approximate betweenness and JSON export
+python tools/analyze.py --workspace my-ws --artifact clustering-coach-CollegeMsg \
+    --analyzer overlap-quality --betweenness-k 500 --save-json report.json
+```
+
+The overlap quality analyzer prints a human-readable report and optionally saves it as JSON. It works for both static and dynamic benchmark artifacts.
+
+See [Post-Hoc Analysis](analysis.md) for the full reference.
+
 ## Typical Workflow
 
 ```bash
@@ -179,6 +200,7 @@ cp .env.example .env
 python main.py --dataset-path ./data/CollegeMsg.txt --dataset CollegeMsg --max-steps 10
 python main_static.py --builtin karate --num-runs 1
 ./scripts/plot.sh
+python tools/analyze.py --workspace my-ws --artifact clustering-coach-CollegeMsg --analyzer overlap-quality
 ```
 
 ## Common Issues
@@ -202,3 +224,4 @@ python main_static.py --builtin karate --num-runs 1
 - See [Adding Algorithms](adding_algorithms.md) to integrate your own community detection method.
 - See [Metrics Documentation](metrics.md) for the meaning of the logged values.
 - See [Visualization Guide](visualization.md) for plot details.
+- See [Post-Hoc Analysis](analysis.md) for the overlap quality analyzer reference.
