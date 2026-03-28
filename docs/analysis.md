@@ -18,18 +18,21 @@ The pickle file stores the exact snapshot graphs used during the benchmark. For 
 The CLI tool is `tools/analyze.py`:
 
 ```bash
-python tools/analyze.py --workspace <workspace> --artifact <artifact-name> [options]
+python tools/analyze.py [--config config/analyzer.yaml] [options]
 ```
 
 ### Options
 
 | Flag | Description |
 |------|-------------|
-| `--workspace` | Comet ML workspace name (required) |
-| `--artifact` | Artifact name, e.g. `clustering-coach-CollegeMsg` (required) |
-| `--output-dir` | Local directory to download artifact into (default: temp dir) |
-| `--version` | Artifact version or alias (default: latest) |
-| `--analyzer` | Which analyzer to run: `summary` or `overlap-quality` (default: `summary`) |
+| `--workspace` | Comet ML workspace name (overrides config / `.env`) |
+| `--artifact` | Artifact name, e.g. `clustering-coach-CollegeMsg` (repeatable) |
+| `--artifact-group` | Artifact group name from `config/analyzer.yaml` |
+| `--all-artifacts` | Analyze all artifacts in workspace |
+| `--benchmark-mode` | Filter listed artifacts by mode: `dynamic` or `static` |
+| `--output-dir` | Local directory to download artifact(s) into (default from config) |
+| `--version` | Artifact version or alias (default from config, then latest) |
+| `--analyzer` | Which analyzer to run: `summary` or `overlap-quality` (default from config) |
 | `--betweenness-k` | Sample size for approximate betweenness centrality (default: exact) |
 | `--save-json` | Save analysis result as JSON to this path |
 
@@ -37,16 +40,61 @@ python tools/analyze.py --workspace <workspace> --artifact <artifact-name> [opti
 
 ```bash
 # Basic summary (default analyzer)
-python tools/analyze.py --workspace my-ws --artifact clustering-coach-CollegeMsg
+python tools/analyze.py --artifact clustering-coach-CollegeMsg
 
 # Overlap quality analysis
-python tools/analyze.py --workspace my-ws --artifact clustering-coach-CollegeMsg \
+python tools/analyze.py --artifact clustering-coach-CollegeMsg \
     --analyzer overlap-quality
 
 # With approximate betweenness and JSON export
-python tools/analyze.py --workspace my-ws --artifact clustering-coach-CollegeMsg \
+python tools/analyze.py --artifact clustering-coach-CollegeMsg \
     --analyzer overlap-quality --betweenness-k 500 --save-json report.json
+
+# Analyze all dynamic artifacts at once using config defaults
+python tools/analyze.py --config config/analyzer.yaml --all-artifacts --benchmark-mode dynamic
 ```
+
+`--workspace` is optional when `workspace` is defined in `config/analyzer.yaml` or `COMET_WORKSPACE` is set.
+
+## Plotting Analyzer Results
+
+Use `tools/plot_analysis.py` to visualize saved analyzer reports:
+
+```bash
+# Plot all supported figures from one report
+python tools/plot_analysis.py --input report.json --plot all
+
+# Plot overlap fraction from many report files
+python tools/plot_analysis.py --input reports/*.json --plot overlap-fraction
+
+# Plot rank-biserial effect size for a specific structural metric
+python tools/plot_analysis.py --input reports --plot structural-effect-size \
+    --metric participation_coefficient
+
+# Use config defaults (plot all reports in configured report_dir)
+python tools/plot_analysis.py --config config/analyzer.yaml
+```
+
+### Plot CLI options
+
+| Flag | Description |
+|------|-------------|
+| `--input` | Report file(s), directory, and/or glob pattern(s) (optional when config is used) |
+| `--plot` | Plot type: `all`, `overlap-fraction`, `temporal-stability`, `structural-effect-size`, `structural-medians` |
+| `--metric` | Structural metric for structural plots: `participation_coefficient`, `max_embeddedness`, `betweenness_centrality` |
+| `--output-dir` | Image output directory (default: `assets/analysis`) |
+
+## Analyzer YAML Config
+
+Analyzer tools now support `config/analyzer.yaml` for defaults and batch selection.
+
+Key sections:
+
+- `workspace`: Comet workspace fallback
+- `directories`: download/report/plot output paths
+- `analysis`: analyzer defaults (`default_analyzer`, `default_version`, overlap params)
+- `selection`: artifact selection mode (`explicit`, `group`, `all`) and filters
+- `plotting`: plot defaults and named `report_groups`
 
 ## Available Analyzers
 

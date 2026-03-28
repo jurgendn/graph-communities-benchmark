@@ -187,9 +187,18 @@ python tools/analyze.py --workspace my-ws --artifact clustering-coach-CollegeMsg
 # With approximate betweenness and JSON export
 python tools/analyze.py --workspace my-ws --artifact clustering-coach-CollegeMsg \
     --analyzer overlap-quality --betweenness-k 500 --save-json report.json
+
+# Analyze all dynamic artifacts in one command (YAML-driven)
+python tools/analyze.py --config config/analyzer.yaml --all-artifacts --benchmark-mode dynamic
 ```
 
 The overlap quality analyzer prints a human-readable report and optionally saves it as JSON. It works for both static and dynamic benchmark artifacts.
+
+You can plot saved analyzer reports directly:
+
+```bash
+python tools/plot_analysis.py --input report.json --plot all
+```
 
 See [Post-Hoc Analysis](analysis.md) for the full reference.
 
@@ -221,7 +230,7 @@ python tools/analyze.py --workspace my-ws --artifact clustering-coach-CollegeMsg
 ## Next Steps
 
 - See [Configuration Guide](configuration.md) to change target datasets and algorithms.
-- See [Adding Algorithms](adding_algorithms.md) to integrate your own community detection method.
-- See [Metrics Documentation](metrics.md) for the meaning of the logged values.
+- See [Development Guide](reference/development_guide.md) to integrate your own community detection method.
+- See [Metrics Documentation](reference/metrics.md) for the meaning of the logged values.
 - See [Visualization Guide](visualization.md) for plot details.
 - See [Post-Hoc Analysis](analysis.md) for the overlap quality analyzer reference.

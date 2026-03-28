@@ -2,7 +2,7 @@
 
 ## System Overview
 
-![Architecture Diagram](../images/architecture.png)
+![Architecture Diagram](../../images/architecture.png)
 
 The Graph Communities Benchmark supports three primary benchmarking workflows:
 
@@ -274,7 +274,7 @@ datasets:
 
 ## Extending the Benchmark
 
-See [Adding Algorithms](adding_algorithms.md) for a complete step-by-step guide.
+See [Development Guide](development_guide.md) for step-by-step algorithm integration guidance.
 
 ### Add a new snapshot algorithm
 1. Create a class inheriting `CommunityDetectionAlgorithm` in `src/models/static/`.

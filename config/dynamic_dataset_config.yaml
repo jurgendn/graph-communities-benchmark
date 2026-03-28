@@ -2,16 +2,16 @@
 # Each dataset entry contains the parameters required for benchmarking
 
 target_datasets:
-  # - college-msg
-  # - soc-sign-bitcoinalpha
-  # - soc-sign-bitcoinotc
-  # - ca-astroph
-  # - ca-condmat
-  # - ca-hepph
-  # - email-enron-large
+  - college-msg
+  - soc-sign-bitcoinalpha
+  - soc-sign-bitcoinotc
+  - ca-astroph
+  - ca-condmat
+  - ca-hepph
+  - email-enron-large
   - edit-enwikibooks
-  # - ia-frwikinews-user-edits
-  # - bio-wormnet-v3
+  - ia-frwikinews-user-edits
+  - bio-wormnet-v3
   # - scc-infect-dublin
   # - ia-contacts-dublin
   # - ia-digg-reply

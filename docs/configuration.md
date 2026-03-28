@@ -16,7 +16,7 @@ The repository uses YAML files under `config/` to define algorithms, datasets, a
 
 This file drives both [`main.py`](../main.py) and [`main_static.py`](../main_static.py) through [`src/algorithms/factory.py`](../src/algorithms/factory.py).
 
-Algorithm identity — module path, type, clustering type, default parameters, and description — is defined by `@register` decorators in the algorithm source files (see [Adding Algorithms](adding_algorithms.md)). The YAML config is a **minimal run configuration** that only selects which registered algorithms to execute and optionally overrides their default parameters.
+Algorithm identity — module path, type, clustering type, default parameters, and description — is defined by `@register` decorators in the algorithm source files (see [Development Guide](reference/development_guide.md)). The YAML config is a **minimal run configuration** that only selects which registered algorithms to execute and optionally overrides their default parameters.
 
 ### Structure
 
@@ -313,4 +313,17 @@ Edit [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml)
 
 ### Analyze clustering artifacts
 
-The post-hoc analyzer (`tools/analyze.py`) requires `COMET_API_KEY` and `COMET_WORKSPACE` in `.env` to download artifacts. No additional config files are needed — artifact names follow the pattern `clustering-{algorithm}-{dataset}` and are passed directly via the `--artifact` flag. See [Post-Hoc Analysis](analysis.md) for details.
+The post-hoc analyzer (`tools/analyze.py`) requires `COMET_API_KEY` in `.env` to download artifacts. Workspace can come from one of:
+
+- `--workspace` CLI flag
+- `workspace` in [`config/analyzer.yaml`](../config/analyzer.yaml)
+- `COMET_WORKSPACE` in `.env`
+
+Use [`config/analyzer.yaml`](../config/analyzer.yaml) to define defaults for:
+
+- analyzer mode and betweenness settings
+- batch selection (`explicit`, `group`, or `all` artifacts)
+- dynamic/static filtering for all-artifact runs
+- output directories for downloaded artifacts, JSON reports, and plots
+
+See [Post-Hoc Analysis](analysis.md) for full examples.
