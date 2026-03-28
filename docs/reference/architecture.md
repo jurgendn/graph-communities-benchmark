@@ -2,7 +2,7 @@
 
 ## System Overview
 
-![Architecture Diagram](../images/architecture.png)
+![Architecture Diagram](../../images/architecture.png)
 
 The Graph Communities Benchmark supports three primary benchmarking workflows:
 
@@ -146,6 +146,46 @@ Comet ML integration logs one experiment per benchmark run:
 - **Parameters**: contents of `config/algorithms.yaml` + CLI arguments
 - **Step metrics**: per-snapshot values (modularity, NMI, runtime)
 - **Summary metrics**: averages across all snapshots
+- **Clustering artifact**: full `List[NodeClustering]` objects (pickle) + JSON metadata
+
+### Post-Hoc Analysis Layer — `src/analyzer/`
+
+The analyzer package provides offline analysis of clustering artifacts downloaded from Comet ML. It operates independently of the benchmark pipeline — artifacts are self-contained with graphs and communities.
+
+**Artifact format** — each Comet Artifact contains two files:
+
+| File | Format | Contents |
+|------|--------|----------|
+| `clusterings.pkl` | pickle | `List[NodeClustering]` with `.graph`, `.communities`, `.method_name`, `.method_parameters`, `.overlap` |
+| `clustering_payload.json` | JSON | Lightweight metadata for filtering (no communities, no graph data) |
+
+**Module breakdown:**
+
+| Module | Role |
+|--------|------|
+| `artifacts.py` | Enrich, serialize, upload, download, and load artifacts |
+| `models.py` | Pydantic models for payloads and analysis reports |
+| `runner.py` | Orchestrate download + analysis dispatch |
+| `overlap_quality.py` | Per-snapshot structural analysis and temporal stability |
+| `metrics_structural.py` | Participation coefficient, max embeddedness, betweenness centrality |
+| `metrics_accuracy.py` | Omega index, ONMI between consecutive snapshots |
+| `stats.py` | Mann-Whitney U test with rank-biserial effect size |
+
+**Data flow:**
+
+```
+Benchmark run
+    └─► enrich_clusterings() — fill graph/method_name/overlap on each NodeClustering
+            └─► build_payload() — create JSON metadata (no communities)
+            └─► log_artifact() — upload pickle + JSON to Comet ML
+
+Post-hoc analysis (tools/analyze.py)
+    └─► download_artifact() — fetch artifact from Comet ML
+            ├── load_payload() — parse JSON metadata
+            └── load_clusterings() — unpickle List[NodeClustering]
+                    └─► analyzer dispatch (summary or overlap-quality)
+                            └─► per-snapshot structural analysis using nc.graph
+```
 
 ---
 
@@ -234,7 +274,7 @@ datasets:
 
 ## Extending the Benchmark
 
-See [Adding Algorithms](adding_algorithms.md) for a complete step-by-step guide.
+See [Development Guide](development_guide.md) for step-by-step algorithm integration guidance.
 
 ### Add a new snapshot algorithm
 1. Create a class inheriting `CommunityDetectionAlgorithm` in `src/models/static/`.
@@ -253,6 +293,11 @@ See [Adding Algorithms](adding_algorithms.md) for a complete step-by-step guide.
 2. Call it from `evaluate()` in `src/core/pipeline.py`
 3. Add the trace field to `MethodDynamicResults`
 4. Log to Comet ML via `log_results()`
+
+### Add a new post-hoc analyzer
+1. Implement the analyzer function in `src/analyzer/` with the signature `(payload, clusterings, **kwargs) -> dict`
+2. Register it in the `ANALYZERS` dict in `src/analyzer/runner.py`
+3. The CLI (`tools/analyze.py`) picks it up automatically via the `--analyzer` flag
 
 ---
 
@@ -350,4 +395,18 @@ Comet ML Experiments
                             ├── Read merged JSON files
                             ├── Generate grouped figures per metric
                             └── Write PNG: assets/<benchmark-type>/<metric>/...
+```
+
+Clustering artifacts can be analyzed separately:
+
+```
+Comet ML Artifacts
+    └─► tools/analyze.py
+            ├── Download clustering artifact (pickle + JSON)
+            ├── Load List[NodeClustering] with graphs attached
+            └── Run analyzer (summary or overlap-quality)
+                    ├── Per-snapshot structural metrics (participation, embeddedness, betweenness)
+                    ├── Mann-Whitney U tests (overlap vs non-overlap nodes)
+                    ├── Temporal ONMI stability (consecutive snapshots)
+                    └── Print report / export JSON
 ```

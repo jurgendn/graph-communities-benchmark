@@ -1,0 +1,35 @@
+workspace: "d-ng-nguy-n"
+
+directories:
+  artifact_download_dir: "experiments/analyzer/artifacts"
+  report_dir: "experiments/analyzer/reports"
+  plot_output_dir: "assets/analysis"
+
+analysis:
+  default_analyzer: "overlap-quality"
+  default_version: "latest"
+  save_json: true
+  overlap_quality:
+    betweenness_k: 500
+
+selection:
+  artifact_type: "clustering-result"
+  default_mode: "all" # explicit | group | all
+  default_group: ""
+  explicit_artifacts: []
+  artifact_groups:
+    dynamic_collegemsg:
+      - "clustering-coach-CollegeMsg"
+      - "clustering-tiles-CollegeMsg"
+  filters:
+    benchmark_mode:
+      - "dynamic"
+
+plotting:
+  default_plot: "all"
+  default_metric: "participation_coefficient"
+  default_report_group: ""
+  report_groups:
+    collegemsg:
+      - "experiments/analyzer/reports/clustering-coach-CollegeMsg.json"
+      - "experiments/analyzer/reports/clustering-tiles-CollegeMsg.json"

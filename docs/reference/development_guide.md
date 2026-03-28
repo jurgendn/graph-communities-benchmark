@@ -8,12 +8,12 @@ This project is organized around one shared benchmark pipeline:
 4. evaluate each snapshot
 5. log results to Comet ML
 
-The main orchestration code lives in [`main.py`](../main.py), [`main_static.py`](../main_static.py), [`src/algorithms/factory.py`](../src/algorithms/factory.py), and [`src/core/pipeline.py`](../src/core/pipeline.py).
+The main orchestration code lives in [`main.py`](../../main.py), [`main_static.py`](../../main_static.py), [`src/algorithms/factory.py`](../../src/algorithms/factory.py), and [`src/core/pipeline.py`](../../src/core/pipeline.py).
 
 ## Entry Points
 
-- [`main.py`](../main.py): temporal edge-list and LFR `.gml` benchmarks
-- [`main_static.py`](../main_static.py): static graph benchmarks
+- [`main.py`](../../main.py): temporal edge-list and LFR `.gml` benchmarks
+- [`main_static.py`](../../main_static.py): static graph benchmarks
 
 `main.py` can run both snapshot algorithms and temporal algorithms.
 `main_static.py` runs snapshot algorithms only.
@@ -22,7 +22,7 @@ Static benchmarking reuses the same pipeline by loading graphs as `TemporalGraph
 
 ## Model Layout
 
-Algorithm implementations live under [`src/models/`](../src/models):
+Algorithm implementations live under [`src/models/`](../../src/models):
 
 - `src/models/static/` — snapshot-based algorithms
 - `src/models/dynamic/` — temporal algorithms
@@ -35,18 +35,16 @@ Within `static/` and `dynamic/`, use:
 
 ## Add A New Algorithm
 
-For a complete, researcher-focused guide see [Adding Algorithms](adding_algorithms.md).
-
 Templates are available in:
 
-- [`templates/static_algorithm_template.py`](../templates/static_algorithm_template.py)
-- [`templates/dynamic_algorithm_template.py`](../templates/dynamic_algorithm_template.py)
+- [`templates/static_algorithm_template.py`](../../templates/static_algorithm_template.py)
+- [`templates/dynamic_algorithm_template.py`](../../templates/dynamic_algorithm_template.py)
 
 Adding an algorithm requires **three touches**:
 
 1. **Implement the algorithm file** with a `@register(...)` decorator.
-2. **Add the module path** to `_REGISTRATION_MODULES` in [`src/algorithms/factory.py`](../src/algorithms/factory.py).
-3. **Add the algorithm name** to the appropriate target list in [`config/algorithms.yaml`](../config/algorithms.yaml).
+2. **Add the module path** to `_REGISTRATION_MODULES` in [`src/algorithms/factory.py`](../../src/algorithms/factory.py).
+3. **Add the algorithm name** to the appropriate target list in [`config/algorithms.yaml`](../../config/algorithms.yaml).
 
 ### Add a new snapshot algorithm
 
@@ -55,7 +53,7 @@ Place the implementation in one of:
 - `src/models/static/overlap/`
 - `src/models/static/crisp/`
 
-Implement the common interface from [`src/algorithms/base.py`](../src/algorithms/base.py) and decorate with `@register`:
+Implement the common interface from [`src/algorithms/base.py`](../../src/algorithms/base.py) and decorate with `@register`:
 
 ```python
 from typing import List
@@ -102,7 +100,7 @@ Returning `MethodDynamicResults` is useful when you want to preserve custom runt
 
 **Step 1.** The `@register(...)` decorator in your source file handles identity. No YAML definitions needed — just the decorator.
 
-**Step 2.** Add the module path to `_REGISTRATION_MODULES` in [`src/algorithms/factory.py`](../src/algorithms/factory.py):
+**Step 2.** Add the module path to `_REGISTRATION_MODULES` in [`src/algorithms/factory.py`](../../src/algorithms/factory.py):
 
 ```python
 _REGISTRATION_MODULES = [
@@ -158,12 +156,12 @@ python -c "from src.algorithms.factory import load_algorithms; print(sorted(load
 
 ## Add A New Dataset
 
-Before adding config entries, make sure the local files match the expected loader format in the [Dataset Preparation Guide](dataset_preparation.md).
+Before adding config entries, make sure the local files match the expected loader format in the [Dataset Preparation Guide](../dataset_preparation.md).
 
 ### Temporal dataset
 
 1. Place the local file under `data/`.
-2. Add an entry under `datasets` in [`config/dynamic_dataset_config.yaml`](../config/dynamic_dataset_config.yaml).
+2. Add an entry under `datasets` in [`config/dynamic_dataset_config.yaml`](../../config/dynamic_dataset_config.yaml).
 3. Set `type` to `edge_list` or `lfr`.
 4. Optionally add the dataset key to `target_datasets`.
 
@@ -186,7 +184,7 @@ datasets:
 ### Static dataset
 
 1. Place the local file under `data/`.
-2. Add an entry under `datasets` in [`config/static_dataset_config.yaml`](../config/static_dataset_config.yaml).
+2. Add an entry under `datasets` in [`config/static_dataset_config.yaml`](../../config/static_dataset_config.yaml).
 3. Optionally add the dataset key to `target_datasets`.
 
 Example:
@@ -226,48 +224,62 @@ python main.py --lfr-folder ./data/synthetic_n_5000_1 --ground-truth-attr commun
 ./scripts/benchmark_static.sh synthetic-n-5000-1 1
 ```
 
-The temporal loader is implemented in [`src/data/data_reader.py`](../src/data/data_reader.py). The static single-snapshot loader is implemented in [`src/data/static_loader.py`](../src/data/static_loader.py). Ground truth is precomputed at load time and stored on `TemporalGraph._ground_truth_clusterings`.
+The temporal loader is implemented in [`src/data/data_reader.py`](../../src/data/data_reader.py). The static single-snapshot loader is implemented in [`src/data/static_loader.py`](../../src/data/static_loader.py). Ground truth is precomputed at load time and stored on `TemporalGraph._ground_truth_clusterings`.
 
 ## Document Vast-PMO
 
-The repository includes a mathematical summary of the Vast-PMO model in [`VAST-PMO.md`](../VAST-PMO.md). Keep that file in sync when you change:
+If your branch includes a `VAST-PMO.md` design note, keep it in sync when you change:
 
 - the Louvain backbone initialization
 - the PMO gain function
 - overlap constraints such as `r`
-- parameter names or semantics in [`config/algorithms.yaml`](../config/algorithms.yaml)
+- parameter names or semantics in [`config/algorithms.yaml`](../../config/algorithms.yaml)
 
 ## Add A New Metric
 
 1. Implement the metric in `src/evaluation/`.
-2. Compute it during evaluation in [`src/core/pipeline.py`](../src/core/pipeline.py).
-3. Extend [`src/core/results.py`](../src/core/results.py) if new traces or averages are needed.
-4. Add the metric key to [`config/visualization_dynamic.yaml`](../config/visualization_dynamic.yaml) and/or [`config/visualization_static.yaml`](../config/visualization_static.yaml) if it should appear in fetched and plotted outputs.
+2. Compute it during evaluation in [`src/core/pipeline.py`](../../src/core/pipeline.py).
+3. Extend [`src/core/results.py`](../../src/core/results.py) if new traces or averages are needed.
+4. Add the metric key to [`config/visualization_dynamic.yaml`](../../config/visualization_dynamic.yaml) and/or [`config/visualization_static.yaml`](../../config/visualization_static.yaml) if it should appear in fetched and plotted outputs.
+
+## Add A New Post-Hoc Analyzer
+
+Post-hoc analyzers operate on downloaded Comet artifacts rather than during the benchmark run.
+
+1. Implement the analyzer function in `src/analyzer/` with the signature `fn(payload, clusterings=None, **kwargs) -> dict`.
+2. Register it in the `ANALYZERS` dict in [`src/analyzer/runner.py`](../../src/analyzer/runner.py).
+3. The CLI (`tools/analyze.py`) picks it up automatically via the `--analyzer` flag.
+
+The `payload` is a `ClusteringArtifactPayload` (JSON metadata); `clusterings` is `Optional[List[NodeClustering]]` loaded from pickle. Both are provided by the runner.
 
 ## Important Modules
 
 | Path | Role |
 | --- | --- |
-| [`main.py`](../main.py) | temporal and LFR CLI entry point |
-| [`main_static.py`](../main_static.py) | static CLI entry point |
-| [`src/utils/arg_parser.py`](../src/utils/arg_parser.py) | temporal CLI arguments |
-| [`src/algorithms/registry.py`](../src/algorithms/registry.py) | `@register` decorator and `ALGORITHM_REGISTRY` |
-| [`src/algorithms/cdlib_adapters.py`](../src/algorithms/cdlib_adapters.py) | CDlib algorithm registrations |
-| [`src/algorithms/factory.py`](../src/algorithms/factory.py) | loads and instantiates registered algorithms |
-| [`src/algorithms/wrappers.py`](../src/algorithms/wrappers.py) | adapts snapshot and temporal call styles |
-| [`src/data/data_reader.py`](../src/data/data_reader.py) | temporal and LFR dataset loaders |
-| [`src/data/static_loader.py`](../src/data/static_loader.py) | static loader returning one-snapshot `TemporalGraph` |
-| [`src/core/pipeline.py`](../src/core/pipeline.py) | run, evaluate, and log pipeline |
-| [`src/evaluation/metrics.py`](../src/evaluation/metrics.py) | modularity and NMI dispatch |
-| [`src/evaluation/onmi_fast.py`](../src/evaluation/onmi_fast.py) | fast overlapping NMI implementation |
-| [`src/models/common/`](../src/models/common) | shared model helpers and mixins |
-| [`src/visualization/`](../src/visualization) | Comet fetch/merge/plot pipeline |
+| [`main.py`](../../main.py) | temporal and LFR CLI entry point |
+| [`main_static.py`](../../main_static.py) | static CLI entry point |
+| [`src/utils/arg_parser.py`](../../src/utils/arg_parser.py) | temporal CLI arguments |
+| [`src/algorithms/registry.py`](../../src/algorithms/registry.py) | `@register` decorator and `ALGORITHM_REGISTRY` |
+| [`src/algorithms/cdlib_adapters.py`](../../src/algorithms/cdlib_adapters.py) | CDlib algorithm registrations |
+| [`src/algorithms/factory.py`](../../src/algorithms/factory.py) | loads and instantiates registered algorithms |
+| [`src/algorithms/wrappers.py`](../../src/algorithms/wrappers.py) | adapts snapshot and temporal call styles |
+| [`src/data/data_reader.py`](../../src/data/data_reader.py) | temporal and LFR dataset loaders |
+| [`src/data/static_loader.py`](../../src/data/static_loader.py) | static loader returning one-snapshot `TemporalGraph` |
+| [`src/core/pipeline.py`](../../src/core/pipeline.py) | run, evaluate, and log pipeline |
+| [`src/evaluation/metrics.py`](../../src/evaluation/metrics.py) | modularity and NMI dispatch |
+| [`src/evaluation/onmi_fast.py`](../../src/evaluation/onmi_fast.py) | fast overlapping NMI implementation |
+| [`src/analyzer/artifacts.py`](../../src/analyzer/artifacts.py) | artifact enrichment, serialization, upload/download |
+| [`src/analyzer/runner.py`](../../src/analyzer/runner.py) | post-hoc analysis orchestration |
+| [`src/analyzer/overlap_quality.py`](../../src/analyzer/overlap_quality.py) | overlap quality structural analysis |
+| [`tools/analyze.py`](../../tools/analyze.py) | CLI for post-hoc artifact analysis |
+| [`src/models/common/`](../../src/models/common) | shared model helpers and mixins |
+| [`src/visualization/`](../../src/visualization) | Comet fetch/merge/plot pipeline |
 
 ## Development Tips
 
-- Prefer updating the shared pipeline in [`src/core/pipeline.py`](../src/core/pipeline.py) over duplicating evaluation logic.
+- Prefer updating the shared pipeline in [`src/core/pipeline.py`](../../src/core/pipeline.py) over duplicating evaluation logic.
 - Keep snapshot algorithms stateless when possible; the wrapper will handle per-snapshot iteration.
 - Keep temporal algorithms explicit about which state they carry from one snapshot to the next.
 - Keep algorithm config entries simple and readable; the YAML run config should only list names and parameter overrides.
-- When changing plot behavior, verify the relevant visualization config file and the helpers under [`src/visualization/`](../src/visualization/).
+- When changing plot behavior, verify the relevant visualization config file and the helpers under [`src/visualization/`](../../src/visualization/).
 - Because `data/`, `experiments/`, and `assets/` are ignored, document any required local setup when adding new workflows.

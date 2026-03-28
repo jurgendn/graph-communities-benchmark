@@ -14,12 +14,12 @@
 
 # Snapshot (static) algorithms run independently on each snapshot.
 target_snapshot_algorithms:
-  # - vast-pmo
-  # - coach
+  - vast-pmo
+  - coach
   # - copra
   # - big_clam
-  # - core_expansion
-  # - graph_entropy
+  - core_expansion
+  - graph_entropy
   # - percomvc
   # - slpa
 
